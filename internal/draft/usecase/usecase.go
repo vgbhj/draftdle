@@ -18,9 +18,11 @@ func NewDraftUseCase(repo draft.Repository) draft.DraftUC {
 func (u *DraftUC) GetRandomDraft() ([]*models.Draft, error) {
 	patch, err := u.repo.GetLastPatch()
 
-	match, err :=
-	
-	drafts, err := 
+	leagues, err := u.repo.GetLeaguesByPatch(patch.ID)
+
+	matches, err := u.repo.GetMatchesByLeague(league)
+
+	drafts, err := u.repo.GetDraftByMatchID(match)
 
 	return drafts, nil
 }
