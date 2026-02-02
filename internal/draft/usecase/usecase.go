@@ -16,13 +16,17 @@ func NewDraftUseCase(repo draft.Repository) draft.DraftUC {
 }
 
 func (u *DraftUC) GetRandomDraft() ([]*models.Draft, error) {
-	patch, err := u.repo.GetLastPatch()
+	match, err := u.repo.GetRandomMatchByLastPatch()
 
-	leagues, err := u.repo.GetLeaguesByPatch(patch.ID)
+	if err != nil {
+		return nil, err
+	}
 
-	matches, err := u.repo.GetMatchesByLeague(league)
+	drafts, err := u.repo.GetDraftByMatchID(match.ID)
 
-	drafts, err := u.repo.GetDraftByMatchID(match)
+	if err != nil {
+		return nil, err
+	}
 
 	return drafts, nil
 }
