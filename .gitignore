@@ -1,0 +1,66 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# IDE - Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+
+# IDE - JetBrains
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Local History for Visual Studio Code
+.history/
+.ionide
+
+# Built Visual Studio Code Extensions
+*.vsix
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+dota.db
+
+# Build output
+/bin/
+/dist/
+/build/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
