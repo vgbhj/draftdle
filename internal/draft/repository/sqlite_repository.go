@@ -51,7 +51,7 @@ func (r *DraftRepository) GetLastPatch() (*models.Patch, error) {
 	return patch, nil
 }
 
-func (r *DraftRepository) GetLeaguesByPatch(patch_id int64) ([]*models.League, error) {
+func (r *DraftRepository) GetLeaguesByPatch(patchID int64) ([]*models.League, error) {
 	var leagues []*models.League
 
 	query := `
@@ -60,7 +60,7 @@ func (r *DraftRepository) GetLeaguesByPatch(patch_id int64) ([]*models.League, e
 		WHERE patch_id = ?
 	`
 
-	err := r.db.Select(&leagues, query, patch_id)
+	err := r.db.Select(&leagues, query, patchID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,6 +68,19 @@ func (r *DraftRepository) GetLeaguesByPatch(patch_id int64) ([]*models.League, e
 	return leagues, nil
 }
 
-func (r *DraftRepository) GetMatchesByLeague(league_id int64) ([]*models.Match, error) {
-	return nil, nil
+func (r *DraftRepository) GetMatchesByLeague(leagueID int64) ([]*models.Match, error) {
+	var matches []*models.Match
+
+	query := `
+		SELECT id, league_id
+		FROM matches
+		WHERE league_id = ?
+	`
+
+	err := r.db.Select(&matches, query, leagueID)
+	if err != nil {
+		return nil, err
+	}
+
+	return matches, nil
 }
