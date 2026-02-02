@@ -17,7 +17,7 @@ func NewDraftReposiroty(db *sqlx.DB) draft.Repository {
 }
 
 func (r *DraftRepository) GetDraftByMatchID(match_id int64) ([]*models.Draft, error) {
-	drafts := []*models.Draft{}
+	var drafts []*models.Draft
 
 	query := `
 		SELECT id, match_id, is_pick, hero_id, team, "order"
@@ -52,7 +52,20 @@ func (r *DraftRepository) GetLastPatch() (*models.Patch, error) {
 }
 
 func (r *DraftRepository) GetLeaguesByPatch(patch_id int64) ([]*models.League, error) {
-	return nil, nil
+	var leagues []*models.League
+
+	query := `
+		SELECT id, name, tier, patch_id
+		FROM leagues
+		WHERE patch_id = ?
+	`
+
+	err := r.db.Select(&leagues, query, patch_id)
+	if err != nil {
+		return nil, err
+	}
+
+	return leagues, nil
 }
 
 func (r *DraftRepository) GetMatchesByLeague(league_id int64) ([]*models.Match, error) {
