@@ -7,4 +7,5 @@ type Repository interface {
 	GetLeaguesByPatch(patchID int64) ([]*models.League, error)
 	GetMatchesByLeague(leagueID int64) ([]*models.Match, error)
 	GetDraftByMatchID(matchID int64) ([]*models.Draft, error)
+	GetRandomMatchByLastPatch() (*models.Match, error)
 }
