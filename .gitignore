@@ -64,3 +64,5 @@ logs/
 tmp/
 temp/
 *.tmp
+
+.vscode
