@@ -1,6 +1,7 @@
 package http
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -21,6 +22,8 @@ func (d *DraftHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		draft, err := d.draftUC.GetRandomDraft()
 		if err != nil {
+
+			log.Printf("Error getting draft: %v", err)
 
 			return c.JSON(http.StatusInternalServerError, struct {
 				Message string `json:"message"`
