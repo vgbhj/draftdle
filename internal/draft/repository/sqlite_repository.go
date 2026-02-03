@@ -93,7 +93,7 @@ func (r *DraftRepository) GetRandomMatchByLastPatch() (*models.Match, error) {
 		FROM matches m
 		INNER JOIN leagues l ON m.league_id = l.id
 		INNER JOIN patches p ON l.patch_id = p.id
-		WHERER p.id = (
+		WHERE p.id = (
 			SELECT id FROM patches ORDER BY id DESC LIMIT 1
 		)
 		ORDER BY RANDOM()
