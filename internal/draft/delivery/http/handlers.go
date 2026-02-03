@@ -25,11 +25,8 @@ func (d *DraftHandler) Get() echo.HandlerFunc {
 
 			log.Printf("Error getting draft: %v", err)
 
-			return c.JSON(http.StatusInternalServerError, struct {
-				Message string `json:"message"`
-				Status  int    `json:"status"`
-			}{
-				Message: "Cant get draft",
+			return c.JSON(http.StatusInternalServerError, &ErrorResponse{
+				Message: "Failed to get draft",
 				Status:  http.StatusInternalServerError,
 			})
 		}
