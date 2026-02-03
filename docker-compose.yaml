@@ -1,0 +1,9 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_PATH=./data/dota.db
+    volumes:
+      - ./data:/app/data
