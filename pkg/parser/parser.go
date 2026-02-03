@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -31,10 +32,19 @@ type DotaClient struct {
 
 var client *DotaClient
 
+type TierInfo struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type LeagueResponse struct {
+	Data []League `json:"data"`
+}
+
 type League struct {
-	LeagueID int    `json:"leagueid"`
-	Name     string `json:"name"`
-	Tier     string `json:"tier"`
+	LeagueID int      `json:"leagueid"`
+	Name     string   `json:"name"`
+	Tier     TierInfo `json:"tier"`
 }
 
 type LeagueDB struct {
@@ -76,8 +86,19 @@ func tierToInt(tier string) int {
 	}
 }
 
-func FetchLeagues() ([]LeagueDB, error) {
-	resp, err := client.Get("https://api.opendota.com/api/leagues")
+func FetchLeaguesForClean() ([]LeagueDB, error) {
+	req, err := http.NewRequest("GET", "https://www.datdota.com/api/leagues", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+
+	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -89,9 +110,13 @@ func FetchLeagues() ([]LeagueDB, error) {
 	}
 
 	var leagues []League
-	if err := json.NewDecoder(resp.Body).Decode(&leagues); err != nil {
+	var response LeagueResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
+
+	leagues = response.Data
 
 	results := make(chan LeagueDB, len(leagues))
 	var wg sync.WaitGroup
@@ -100,7 +125,82 @@ func FetchLeagues() ([]LeagueDB, error) {
 
 	// for inx, league := range leagues {
 	for i := 0; i < len(leagues); i++ {
-		tierCode := tierToInt(leagues[i].Tier)
+		tierCode := leagues[i].Tier.ID
+		if tierCode < 3 {
+			wg.Add(1)
+
+			go func(l League, tc int) {
+				defer wg.Done()
+
+				semaphore <- struct{}{}
+
+				defer func() { <-semaphore }()
+
+				patchID := 0
+
+				results <- LeagueDB{
+					LeagueID: l.LeagueID,
+					Name:     l.Name,
+					Tier:     tc,
+					PatchID:  patchID,
+				}
+				fmt.Println(i, len(leagues))
+			}(leagues[i], tierCode)
+		}
+	}
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	var filtered []LeagueDB
+	for leagueDB := range results {
+		filtered = append(filtered, leagueDB)
+	}
+
+	return filtered, nil
+}
+
+func FetchLeagues() ([]LeagueDB, error) {
+	req, err := http.NewRequest("GET", "https://www.datdota.com/api/leagues", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+
+	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
+	}
+
+	var leagues []League
+	var response LeagueResponse
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	leagues = response.Data
+
+	results := make(chan LeagueDB, len(leagues))
+	var wg sync.WaitGroup
+
+	semaphore := make(chan struct{}, 10)
+
+	// for inx, league := range leagues {
+	for i := 0; i < len(leagues); i++ {
+		tierCode := leagues[i].Tier.ID
 		if tierCode > 0 {
 			wg.Add(1)
 
@@ -312,13 +412,13 @@ CREATE TABLE IF NOT EXISTS leagues (
 	name TEXT,
 	tier INTEGER,
 	patch_id INTEGER,
-	FOREIGN KEY (patch_id) REFERENCES patches(id)
+	FOREIGN KEY (patch_id) REFERENCES patches(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS matches (
 	id INTEGER PRIMARY KEY,
 	league_id INTEGER,
-	FOREIGN KEY (league_id) REFERENCES leagues(id)
+	FOREIGN KEY (league_id) REFERENCES leagues(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS picks_bans (
@@ -328,15 +428,131 @@ CREATE TABLE IF NOT EXISTS picks_bans (
 	hero_id INTEGER,
 	team INTEGER,
 	"order" INTEGER,
-	FOREIGN KEY (match_id) REFERENCES matches(id)
+	FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
 )
 `
+
+func MigrateSchemaWithData(db *sql.DB) error {
+	if _, err := db.Exec("PRAGMA foreign_keys = OFF"); err != nil {
+		return err
+	}
+	defer db.Exec("PRAGMA foreign_keys = ON")
+
+	tempSchema := `
+    CREATE TABLE patches_new (
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        data DATETIME
+    );
+
+    CREATE TABLE leagues_new (
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        tier INTEGER,
+        patch_id INTEGER,
+        FOREIGN KEY (patch_id) REFERENCES patches_new(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE matches_new (
+        id INTEGER PRIMARY KEY,
+        league_id INTEGER,
+        FOREIGN KEY (league_id) REFERENCES leagues_new(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE picks_bans_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        match_id INTEGER,
+        is_pick BOOLEAN,
+        hero_id INTEGER,
+        team INTEGER,
+        "order" INTEGER,
+        FOREIGN KEY (match_id) REFERENCES matches_new(id) ON DELETE CASCADE
+    );
+    `
+
+	if _, err := db.Exec(tempSchema); err != nil {
+		return err
+	}
+
+	copyQueries := []string{
+		"INSERT INTO patches_new SELECT * FROM patches",
+		"INSERT INTO leagues_new SELECT * FROM leagues",
+		"INSERT INTO matches_new SELECT * FROM matches",
+		"INSERT INTO picks_bans_new SELECT * FROM picks_bans",
+	}
+
+	for _, query := range copyQueries {
+		if _, err := db.Exec(query); err != nil {
+			if !strings.Contains(err.Error(), "no such table") {
+				return err
+			}
+		}
+	}
+
+	oldTables := []string{"picks_bans", "matches", "leagues", "patches"}
+	for _, table := range oldTables {
+		if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table)); err != nil {
+			return err
+		}
+	}
+
+	renameQueries := []string{
+		"ALTER TABLE patches_new RENAME TO patches",
+		"ALTER TABLE leagues_new RENAME TO leagues",
+		"ALTER TABLE matches_new RENAME TO matches",
+		"ALTER TABLE picks_bans_new RENAME TO picks_bans",
+	}
+
+	for _, query := range renameQueries {
+		if _, err := db.Exec(query); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func InitDB(db *sql.DB) {
 	_, err := db.Exec(createShema)
 	if err != nil {
 		log.Fatal("Error create tables:", err)
 	}
+}
+
+func DeleteLeaguesNotIn(db *sql.DB, leagueIDs []int) error {
+	if len(leagueIDs) == 0 {
+		return nil
+	}
+
+	placeholders := make([]string, len(leagueIDs))
+	args := make([]interface{}, len(leagueIDs))
+
+	for i, id := range leagueIDs {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`
+        DELETE FROM leagues
+        WHERE id NOT IN (%s)
+    `, strings.Join(placeholders, ","))
+
+	log.Printf("Starting deletion of leagues not in list (keeping %d leagues)", len(leagueIDs))
+
+	result, err := db.Exec(query, args...)
+	if err != nil {
+		log.Printf("Error deleting leagues: %v", err)
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Printf("Error getting rows affected: %v", err)
+		return err
+	}
+
+	log.Printf("Successfully deleted %d leagues", rowsAffected)
+	return err
 }
 
 func SavePatches(db *sql.DB, patches []Patch) error {
@@ -412,6 +628,26 @@ func SavePicksBans(picksBans []PicksBan, matchID int64, tx *sql.Tx) error {
 	return nil
 }
 
+func GetLeagueByID(db *sql.DB, leagueID int) (*LeagueDB, error) {
+	league := &LeagueDB{}
+
+	query := `
+        SELECT id, name, tier, patch_id
+        FROM leagues
+        WHERE id = ?
+    `
+
+	err := db.QueryRow(query, leagueID).Scan(&league.LeagueID, &league.Name, &league.Tier, &league.PatchID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("league not found: %d", leagueID)
+		}
+		return nil, err
+	}
+
+	return league, nil
+}
+
 func SaveMatches(db *sql.DB, matches []Match) error {
 	tx, err := db.Begin()
 	if err != nil {
@@ -482,7 +718,12 @@ func (c *DotaClient) Get(urlStr string) (*http.Response, error) {
 		return nil, err
 	}
 	q := u.Query()
-	q.Set("api_key", c.apiKey)
+	if strings.Contains(u.Host, "opendota.com") {
+		q.Set("api_key", c.apiKey)
+	}
 	u.RawQuery = q.Encode()
+
+	// log.Printf("GET %s", u.String())
+
 	return c.http.Get(u.String())
 }
