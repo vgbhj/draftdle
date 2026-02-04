@@ -6,9 +6,77 @@
   padding: 0.75rem;
 }
 
-.teams {
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+
+.headerRadiant {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(74, 222, 128, 0.95);
+}
+
+.headerAxis {
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  min-width: 1.5rem;
+}
+
+.headerDire {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(248, 113, 113, 0.95);
+}
+
+.grid {
   display: flex;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.25rem;
   flex: 1;
   min-height: 0;
+  overflow: auto;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.zoneRadiant {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.zoneAxis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+}
+
+.axisNumber {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.zoneDire {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
 }

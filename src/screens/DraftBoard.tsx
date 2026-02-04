@@ -1,5 +1,5 @@
-import type { GameDraft, Hero } from '../types/api';
-import { TeamColumn } from '../components/TeamColumn';
+import type { GameDraft, Hero, PickBanSlot } from '../types/api';
+import { DraftSlot } from '../components/DraftSlot';
 import styles from './DraftBoard.module.css';
 
 interface DraftBoardProps {
@@ -14,35 +14,59 @@ function buildHeroesMap(heroes: Hero[]): Map<number, Hero> {
   return map;
 }
 
-/** Индекс скрытого слота в общем списке слотов команды (баны, затем пики). */
-function getSecretSlotIndex(
-  team: 'radiant' | 'dire',
-  game: GameDraft
-): number | null {
-  if (game.secretPick.team !== team) return null;
-  return game[team].bans.length + game.secretPick.slotIndex;
+function getSlotByOrder(picksBans: PickBanSlot[], order: number): PickBanSlot | null {
+  return picksBans.find((p) => p.order === order) ?? null;
 }
+
+const ROWS = 24;
 
 export function DraftBoard({ game, heroes, onGuess }: DraftBoardProps) {
   const heroesMap = buildHeroesMap(heroes);
+  const picksBans = game.picksBans ?? [];
 
   return (
     <main className={styles.board}>
-      <div className={styles.teams}>
-        <TeamColumn
-          team="radiant"
-          draft={game.radiant}
-          heroesMap={heroesMap}
-          secretSlotIndex={getSecretSlotIndex('radiant', game)}
-          onGuess={onGuess}
-        />
-        <TeamColumn
-          team="dire"
-          draft={game.dire}
-          heroesMap={heroesMap}
-          secretSlotIndex={getSecretSlotIndex('dire', game)}
-          onGuess={onGuess}
-        />
+      <div className={styles.header}>
+        <span className={styles.headerRadiant}>RADIANT</span>
+        <span className={styles.headerAxis}>№</span>
+        <span className={styles.headerDire}>DIRE</span>
+      </div>
+
+      <div className={styles.grid}>
+        {Array.from({ length: ROWS }, (_, i) => i + 1).map((order) => {
+          const slot = getSlotByOrder(picksBans, order);
+          const hero = slot ? heroesMap.get(slot.hero_id) ?? null : null;
+          const isRadiant = slot?.team === 0;
+          const isDire = slot?.team === 1;
+
+          return (
+            <div key={order} className={styles.row}>
+              <div className={styles.zoneRadiant}>
+                {isRadiant && slot && (
+                  <DraftSlot
+                    hero={slot.isSecret ? null : hero}
+                    isSecret={!!slot.isSecret}
+                    isBan={!slot.is_pick}
+                    onGuess={slot.isSecret ? onGuess : undefined}
+                  />
+                )}
+              </div>
+              <div className={styles.zoneAxis}>
+                <span className={styles.axisNumber}>{order}</span>
+              </div>
+              <div className={styles.zoneDire}>
+                {isDire && slot && (
+                  <DraftSlot
+                    hero={slot.isSecret ? null : hero}
+                    isSecret={!!slot.isSecret}
+                    isBan={!slot.is_pick}
+                    onGuess={slot.isSecret ? onGuess : undefined}
+                  />
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </main>
   );

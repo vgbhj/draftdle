@@ -3,7 +3,7 @@
  * Список героев — статичный на фронте (см. data/heroes.ts).
  */
 
-import type { GameDraft, Hero, BackendDraftSlot, TeamKind } from '../types/api';
+import type { GameDraft, Hero, BackendDraftSlot, TeamKind, PickBanSlot } from '../types/api';
 import { HEROES_LIST } from '../data/heroes';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
@@ -19,6 +19,7 @@ export function transformDraftToGame(slots: BackendDraftSlot[]): GameDraft {
   const sorted = [...slots].sort((a, b) => a.order - b.order);
   const radiant = { bans: [] as number[], picks: [] as number[] };
   const dire = { bans: [] as number[], picks: [] as number[] };
+  const picksBans: PickBanSlot[] = [];
 
   let lastPick: { team: TeamKind; heroId: number; pickIndex: number } | null = null;
 
@@ -32,26 +33,33 @@ export function transformDraftToGame(slots: BackendDraftSlot[]): GameDraft {
     } else {
       side.bans.push(s.hero_id);
     }
+    picksBans.push({
+      order: s.order,
+      team: s.team,
+      is_pick: s.is_pick,
+      hero_id: s.hero_id,
+      isSecret: false,
+    });
   }
 
   if (!lastPick) {
     throw new Error('No pick in draft');
   }
 
+  const lastEntry = picksBans[picksBans.length - 1];
+  if (lastEntry?.is_pick) {
+    lastEntry.isSecret = true;
+  }
+
   return {
-    radiant: {
-      bans: radiant.bans,
-      picks: radiant.picks,
-    },
-    dire: {
-      bans: dire.bans,
-      picks: dire.picks,
-    },
+    radiant: { bans: radiant.bans, picks: radiant.picks },
+    dire: { bans: dire.bans, picks: dire.picks },
     secretPick: {
       team: lastPick.team,
       slotIndex: lastPick.pickIndex,
       heroId: lastPick.heroId,
     },
+    picksBans,
   };
 }
 

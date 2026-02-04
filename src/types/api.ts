@@ -43,8 +43,18 @@ export interface TeamDraft {
   bans: (number | null)[];
 }
 
+/** Один слот из picks_bans: порядок хода, команда, пик/бан, герой. */
+export interface PickBanSlot {
+  order: number;
+  team: number; // 0 = Radiant, 1 = Dire
+  is_pick: boolean;
+  hero_id: number;
+  isSecret?: boolean;
+}
+
 export interface GameDraft {
   radiant: TeamDraft;
   dire: TeamDraft;
   secretPick: SecretPick;
+  picksBans?: PickBanSlot[];
 }
