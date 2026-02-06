@@ -1,13 +1,30 @@
 .slot,
 .slotSecret {
   width: 100%;
-  aspect-ratio: 2.2 / 1;
-  max-height: 2.8rem;
+  height: 3.1rem;
   border-radius: 0.4rem;
   overflow: hidden;
   position: relative;
   background: rgba(30, 25, 45, 0.9);
   border: 1px solid rgba(120, 100, 180, 0.3);
+}
+
+.teamRadiant.slotPick {
+  border-color: rgba(74, 222, 128, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(74, 222, 128, 0.25),
+    0 0 14px rgba(74, 222, 128, 0.22);
+}
+
+.teamDire.slotPick {
+  border-color: rgba(248, 113, 113, 0.6);
+  box-shadow:
+    0 0 0 1px rgba(248, 113, 113, 0.25),
+    0 0 14px rgba(248, 113, 113, 0.2);
+}
+
+.slotPick {
+  /* marker class for non-ban slots */
 }
 
 .slotNum {
@@ -22,8 +39,18 @@
 }
 
 .slotBan {
-  opacity: 0.75;
-  border-color: rgba(180, 80, 80, 0.4);
+  height: 1.85rem;
+  filter: grayscale(0) saturate(0.70);
+  border-color: rgba(212, 28, 28, 0.45);
+  box-shadow: none;
+}
+
+.slotBan::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(127, 29, 29, 0.55); /* red-900-ish */
+  pointer-events: none;
 }
 
 .heroImg {
@@ -48,6 +75,14 @@
   cursor: pointer;
   border: 2px solid rgba(100, 150, 255, 0.5);
   transition: border-color 0.2s, transform 0.15s;
+}
+
+.teamRadiant.slotSecret {
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.18);
+}
+
+.teamDire.slotSecret {
+  box-shadow: 0 0 16px rgba(248, 113, 113, 0.16);
 }
 
 .slotSecret:hover {

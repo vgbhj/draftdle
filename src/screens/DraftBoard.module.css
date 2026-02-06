@@ -69,10 +69,36 @@
   min-width: 1.5rem;
 }
 
+.sideLeft,
+.sideRight {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.sideLeft {
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.sideRight {
+  justify-content: flex-start;
+  gap: 0.35rem;
+}
+
+.connector {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.3);
+  flex: 1;
+  min-width: 0.75rem;
+}
+
 .axisNumber {
   font-size: 0.65rem;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.6);
+  line-height: 1;
 }
 
 .zoneDire {

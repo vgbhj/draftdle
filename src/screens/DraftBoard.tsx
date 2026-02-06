@@ -38,30 +38,42 @@ export function DraftBoard({ game, heroes, onGuess }: DraftBoardProps) {
           const hero = slot ? heroesMap.get(slot.hero_id) ?? null : null;
           const isRadiant = slot?.team === 0;
           const isDire = slot?.team === 1;
+          const isBan = !!slot && !slot.is_pick;
+          const team = isRadiant ? 'radiant' : isDire ? 'dire' : undefined;
 
           return (
             <div key={order} className={styles.row}>
               <div className={styles.zoneRadiant}>
                 {isRadiant && slot && (
-                  <DraftSlot
-                    hero={slot.isSecret ? null : hero}
-                    isSecret={!!slot.isSecret}
-                    isBan={!slot.is_pick}
-                    onGuess={slot.isSecret ? onGuess : undefined}
-                  />
+                  <div className={styles.sideLeft}>
+                    <DraftSlot
+                      hero={slot.isSecret ? null : hero}
+                      isSecret={!!slot.isSecret}
+                      isBan={isBan}
+                      team={team}
+                      onGuess={slot.isSecret ? onGuess : undefined}
+                    />
+                    <span className={styles.connector} aria-hidden />
+                  </div>
                 )}
               </div>
+
               <div className={styles.zoneAxis}>
                 <span className={styles.axisNumber}>{order}</span>
               </div>
+
               <div className={styles.zoneDire}>
                 {isDire && slot && (
-                  <DraftSlot
-                    hero={slot.isSecret ? null : hero}
-                    isSecret={!!slot.isSecret}
-                    isBan={!slot.is_pick}
-                    onGuess={slot.isSecret ? onGuess : undefined}
-                  />
+                  <div className={styles.sideRight}>
+                    <span className={styles.connector} aria-hidden />
+                    <DraftSlot
+                      hero={slot.isSecret ? null : hero}
+                      isSecret={!!slot.isSecret}
+                      isBan={isBan}
+                      team={team}
+                      onGuess={slot.isSecret ? onGuess : undefined}
+                    />
+                  </div>
                 )}
               </div>
             </div>
