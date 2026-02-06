@@ -3,8 +3,20 @@
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   background: linear-gradient(160deg, #1a1525 0%, #0f0d18 50%, #080610 100%);
   color: #e8e4f0;
+}
+
+.container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .loading {
@@ -19,8 +31,10 @@
 .result {
   position: fixed;
   bottom: calc(1.5rem + env(safe-area-inset-bottom, 0));
-  left: 1rem;
-  right: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 500px;
+  width: calc(100% - 2rem);
   padding: 1rem 1.25rem;
   border-radius: 0.75rem;
   text-align: center;

@@ -1,8 +1,9 @@
 .slot,
 .slotSecret {
   width: 100%;
-  aspect-ratio: 2 / 1;
-  border-radius: 0.5rem;
+  aspect-ratio: 2.2 / 1;
+  max-height: 2.8rem;
+  border-radius: 0.4rem;
   overflow: hidden;
   position: relative;
   background: rgba(30, 25, 45, 0.9);
@@ -43,7 +44,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
+  gap: 0.15rem;
   cursor: pointer;
   border: 2px solid rgba(100, 150, 255, 0.5);
   transition: border-color 0.2s, transform 0.15s;
@@ -95,16 +96,16 @@
 .guessLabel {
   position: relative;
   z-index: 1;
-  font-size: 0.65rem;
+  font-size: 0.55rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: rgba(200, 190, 255, 0.95);
 }
 
 .questionMark {
   position: relative;
   z-index: 1;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: rgba(180, 170, 255, 0.9);
 }

@@ -54,8 +54,10 @@ export default function App() {
   if (loading) {
     return (
       <div className={styles.app}>
-        <Header />
-        <div className={styles.loading}>Loading...</div>
+        <div className={styles.container}>
+          <Header />
+          <div className={styles.loading}>Loading...</div>
+        </div>
       </div>
     );
   }
@@ -63,16 +65,20 @@ export default function App() {
   if (!game) {
     return (
       <div className={styles.app}>
-        <Header />
-        <div className={styles.loading}>No data. Check API.</div>
+        <div className={styles.container}>
+          <Header />
+          <div className={styles.loading}>No data. Check API.</div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className={styles.app}>
-      <Header />
-      <DraftBoard game={game} heroes={heroes} onGuess={handleGuessClick} />
+      <div className={styles.container}>
+        <Header />
+        <DraftBoard game={game} heroes={heroes} onGuess={handleGuessClick} />
+      </div>
       {pickerOpen && (
         <HeroPicker
           heroes={heroes}

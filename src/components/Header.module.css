@@ -2,13 +2,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  padding-top: max(0.75rem, env(safe-area-inset-top, 0));
+  padding: 0.6rem 1rem;
+  padding-top: max(0.6rem, env(safe-area-inset-top, 0));
   background: rgba(0, 0, 0, 0.5);
   position: sticky;
   top: 0;
   z-index: 10;
   min-height: 44px;
+  flex-shrink: 0;
 }
 
 .title {
