@@ -1,12 +1,16 @@
 .slot,
 .slotSecret {
-  width: 100%;
-  height: 3.1rem;
   border-radius: 0.4rem;
   overflow: hidden;
   position: relative;
   background: rgba(30, 25, 45, 0.9);
   border: 1px solid rgba(120, 100, 180, 0.3);
+}
+
+.slotPick,
+.slotSecret {
+  width: 100%;
+  height: 3.1rem;
 }
 
 .teamRadiant.slotPick {
@@ -24,7 +28,7 @@
 }
 
 .slotPick {
-  /* marker class for non-ban slots */
+  display: block;
 }
 
 .slotNum {
@@ -39,9 +43,13 @@
 }
 
 .slotBan {
-  height: 1.85rem;
+  width: 3.75rem;
+  height: 2.25rem;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 auto;
+  border-radius: 0.35rem;
   filter: grayscale(0) saturate(0.70);
-  border-color: rgba(212, 28, 28, 0.45);
+  border-color: rgba(241, 9, 9, 0.76);
   box-shadow: none;
 }
 
