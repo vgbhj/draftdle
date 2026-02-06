@@ -24,6 +24,27 @@ export function DraftBoard({ game, heroes, onGuess }: DraftBoardProps) {
   const heroesMap = buildHeroesMap(heroes);
   const picksBans = game.picksBans ?? [];
 
+  const renderSlot = (slot: PickBanSlot | null, side: 'radiant' | 'dire') => {
+    if (!slot) return null;
+    const team = slot.team === 0 ? 'radiant' : slot.team === 1 ? 'dire' : undefined;
+    if (team !== side) return null;
+
+    const hero = heroesMap.get(slot.hero_id) ?? null;
+    const isBan = !slot.is_pick;
+
+    return (
+      <DraftSlot
+        hero={slot.isSecret ? null : hero}
+        isSecret={!!slot.isSecret}
+        isBan={isBan}
+        team={team}
+        onGuess={slot.isSecret ? onGuess : undefined}
+      />
+    );
+  };
+
+  const snakeClass = (order: number) => (order % 2 === 1 ? styles.snakeOdd : styles.snakeEven);
+
   return (
     <main className={styles.board}>
       <div className={styles.header}>
@@ -35,45 +56,48 @@ export function DraftBoard({ game, heroes, onGuess }: DraftBoardProps) {
       <div className={styles.grid}>
         {Array.from({ length: ROWS }, (_, i) => i + 1).map((order) => {
           const slot = getSlotByOrder(picksBans, order);
-          const hero = slot ? heroesMap.get(slot.hero_id) ?? null : null;
-          const isRadiant = slot?.team === 0;
-          const isDire = slot?.team === 1;
-          const isBan = !!slot && !slot.is_pick;
-          const team = isRadiant ? 'radiant' : isDire ? 'dire' : undefined;
+          const team = slot?.team === 0 ? 'radiant' : slot?.team === 1 ? 'dire' : null;
+
+          const left = renderSlot(slot, 'radiant');
+          const right = renderSlot(slot, 'dire');
+
+          const rowClassName = `${styles.row} ${order % 2 === 0 ? styles.rowEven : styles.rowOdd}`;
 
           return (
-            <div key={order} className={styles.row}>
-              <div className={styles.zoneRadiant}>
-                {isRadiant && slot && (
-                  <div className={styles.sideLeft}>
-                    <DraftSlot
-                      hero={slot.isSecret ? null : hero}
-                      isSecret={!!slot.isSecret}
-                      isBan={isBan}
-                      team={team}
-                      onGuess={slot.isSecret ? onGuess : undefined}
-                    />
+            <div key={order} className={rowClassName} data-order={order}>
+              {/* Radiant lane: slot -> connector -> number mast (если ход Radiant) */}
+              <div className={styles.laneRadiant}>
+                {left ? (
+                  <>
+                    {left}
                     <span className={styles.connector} aria-hidden />
-                  </div>
+                    <span className={`${styles.mastNumber} ${snakeClass(order)}`}>{order}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className={styles.laneSpacer} aria-hidden />
+                    <span className={styles.connectorSpacer} aria-hidden />
+                    <span className={styles.mastNumber} aria-hidden />
+                  </>
                 )}
               </div>
 
-              <div className={styles.zoneAxis}>
-                <span className={styles.axisNumber}>{order}</span>
-              </div>
+              <div className={styles.midGap} aria-hidden />
 
-              <div className={styles.zoneDire}>
-                {isDire && slot && (
-                  <div className={styles.sideRight}>
+              {/* Dire lane: number mast -> connector -> slot (если ход Dire) */}
+              <div className={styles.laneDire}>
+                {right ? (
+                  <>
+                    <span className={`${styles.mastNumber} ${snakeClass(order)}`}>{order}</span>
                     <span className={styles.connector} aria-hidden />
-                    <DraftSlot
-                      hero={slot.isSecret ? null : hero}
-                      isSecret={!!slot.isSecret}
-                      isBan={isBan}
-                      team={team}
-                      onGuess={slot.isSecret ? onGuess : undefined}
-                    />
-                  </div>
+                    {right}
+                  </>
+                ) : (
+                  <>
+                    <span className={styles.mastNumber} aria-hidden />
+                    <span className={styles.connectorSpacer} aria-hidden />
+                    <span className={styles.laneSpacer} aria-hidden />
+                  </>
                 )}
               </div>
             </div>
