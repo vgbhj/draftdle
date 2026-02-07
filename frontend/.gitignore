@@ -26,5 +26,3 @@ dist-ssr
 
 # Backend (push only frontend to frontend-fomkinovicha)
 backend/
-
-data/

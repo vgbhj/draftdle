@@ -4,10 +4,7 @@ import { fetchRandomGame, getHeroes } from './api/client';
 import { Header } from './components/Header';
 import { DraftBoard } from './screens/DraftBoard';
 import { HeroPicker } from './screens/HeroPicker';
-import { MOCK_GAME } from './data/mockGame';
 import styles from './App.module.css';
-
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 export default function App() {
   const heroes = getHeroes();
@@ -16,23 +13,18 @@ export default function App() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
 
-  const loadGame = useCallback(async () => {
-    setLoading(true);
-    setResult(null);
-    try {
-      if (USE_MOCK) {
-        setGame(MOCK_GAME);
-      } else {
-        const gameData = await fetchRandomGame();
-        setGame(gameData);
-      }
-    } catch (e) {
-      console.error(e);
-      setGame(MOCK_GAME);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+const loadGame = useCallback(async () => {
+  setLoading(true);
+  setResult(null);
+  try {
+    const gameData = await fetchRandomGame();
+    setGame(gameData);
+    setLoading(false);
+  } catch (e) {
+    console.error(e);
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     loadGame();
@@ -67,7 +59,7 @@ export default function App() {
       <div className={styles.app}>
         <div className={styles.container}>
           <Header />
-          <div className={styles.loading}>No data. Check API.</div>
+          <div className={styles.loading}>Failed to load game. Please try again.</div>
         </div>
       </div>
     );
