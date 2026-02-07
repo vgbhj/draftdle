@@ -1,0 +1,143 @@
+.board {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.15rem 0.4rem 0.2rem;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.2rem;
+  flex-shrink: 0;
+}
+
+.headerRadiant {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(74, 222, 128, 0.95);
+}
+
+.headerAxis {
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  min-width: 1.5rem;
+}
+
+.headerDire {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(248, 113, 113, 0.95);
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 0.5rem 1fr;
+  column-gap: 0.35rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.rowOdd {
+  position: relative;
+}
+
+.rowEven {
+  position: relative;
+  margin-top: -0.6rem; 
+}
+
+.laneRadiant,
+.laneDire {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 0.25rem;
+}
+
+.laneRadiant {
+  justify-content: flex-end;
+}
+
+.laneDire {
+  justify-content: flex-start;
+}
+
+.midGap {
+  width: 0.5rem;
+}
+
+.mastNumber {
+  width: 1.25rem;
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.snakeOdd {
+  transform: translateX(2px);
+}
+
+.snakeEven {
+  transform: translateX(-2px);
+}
+
+.laneSpacer {
+  width: 0;
+  height: 0;
+}
+
+.sideLeft,
+.sideRight {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  width: 100%;
+}
+
+.sideLeft {
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+.sideRight {
+  justify-content: flex-start;
+  gap: 0.35rem;
+}
+
+.connector {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.3);
+  flex: 1;
+  min-width: 0.75rem;
+}
+
+.connectorSpacer {
+  height: 1px;
+  opacity: 0;
+  flex: 1;
+  min-width: 0.75rem;
+}
+
+/* axisNumber moved into mastNumber */

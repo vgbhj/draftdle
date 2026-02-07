@@ -1,0 +1,50 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem;
+  background: rgba(35, 30, 55, 0.8);
+  border: 1px solid rgba(100, 85, 150, 0.3);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.card:hover {
+  border-color: rgba(140, 120, 200, 0.6);
+  transform: scale(1.03);
+}
+
+.card:active {
+  transform: scale(0.98);
+}
+
+.avatar {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 0.35rem;
+  background: rgba(20, 18, 35, 0.9);
+}
+
+.name {
+  font-size: 0.6rem;
+  color: rgba(220, 210, 255, 0.9);
+  text-align: center;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}

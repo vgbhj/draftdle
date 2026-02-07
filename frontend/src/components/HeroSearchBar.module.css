@@ -1,0 +1,46 @@
+.wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(30, 25, 45, 0.95);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(120, 100, 180, 0.3);
+}
+
+.iconSearch {
+  color: rgba(180, 170, 255, 0.6);
+  font-size: 1rem;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: #e8e4f0;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.input::placeholder {
+  color: rgba(180, 170, 255, 0.5);
+}
+
+.iconClose {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #b8b0c8;
+  cursor: pointer;
+  border-radius: 0.35rem;
+}
+
+.iconClose:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}

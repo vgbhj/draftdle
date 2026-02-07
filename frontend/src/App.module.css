@@ -1,0 +1,73 @@
+.app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background: linear-gradient(160deg, #1a1525 0%, #0f0d18 50%, #080610 100%);
+  color: #e8e4f0;
+}
+
+.container {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: rgba(200, 190, 255, 0.8);
+}
+
+.result {
+  position: fixed;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0));
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 500px;
+  width: calc(100% - 2rem);
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.resultCorrect {
+  background: rgba(40, 120, 80, 0.9);
+  border: 1px solid rgba(80, 180, 120, 0.5);
+  color: #e0ffe8;
+}
+
+.resultWrong {
+  background: rgba(120, 50, 50, 0.9);
+  border: 1px solid rgba(200, 80, 80, 0.5);
+  color: #ffe0e0;
+}
+
+.playAgain {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.playAgain:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
