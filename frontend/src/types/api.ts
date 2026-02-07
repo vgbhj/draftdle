@@ -53,6 +53,7 @@ export interface PickBanSlot {
 }
 
 export interface GameDraft {
+  matchId?: number;
   radiant: TeamDraft;
   dire: TeamDraft;
   secretPick: SecretPick;
