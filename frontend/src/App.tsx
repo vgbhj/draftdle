@@ -18,6 +18,9 @@ const loadGame = useCallback(async () => {
   setResult(null);
   try {
     const gameData = await fetchRandomGame();
+    if (gameData.matchId != null) {
+      console.log('[Draftdle] Match ID:', gameData.matchId);
+    }
     setGame(gameData);
     setLoading(false);
   } catch (e) {
