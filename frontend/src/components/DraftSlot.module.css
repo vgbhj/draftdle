@@ -1,0 +1,154 @@
+.slot,
+.slotSecret {
+  border-radius: 0.4rem;
+  overflow: hidden;
+  position: relative;
+  background: rgba(30, 25, 45, 0.9);
+  border: 1px solid rgba(120, 100, 180, 0.3);
+}
+
+.slotPick,
+.slotSecret {
+  width: 100%;
+  height: 2.65rem;
+}
+
+.teamRadiant.slotPick {
+  border-color: rgba(74, 222, 128, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(74, 222, 128, 0.25),
+    0 0 14px rgba(74, 222, 128, 0.22);
+}
+
+.teamDire.slotPick {
+  border-color: rgba(248, 113, 113, 0.6);
+  box-shadow:
+    0 0 0 1px rgba(248, 113, 113, 0.25),
+    0 0 14px rgba(248, 113, 113, 0.2);
+}
+
+.slotPick {
+  display: block;
+}
+
+.slotNum {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.35rem;
+  z-index: 2;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+.slotBan {
+  width: 3.75rem;
+  height: 2.25rem;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 auto;
+  border-radius: 0.35rem;
+  filter: grayscale(0) saturate(0.70);
+  border-color: rgba(241, 9, 9, 0.76);
+  box-shadow: none;
+}
+
+.slotBan::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(127, 29, 29, 0.55); /* red-900-ish */
+  pointer-events: none;
+}
+
+.heroImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  background: rgba(50, 45, 70, 0.6);
+}
+
+/* Secret slot */
+.slotSecret {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  cursor: pointer;
+  border: 2px solid rgba(100, 150, 255, 0.5);
+  transition: border-color 0.2s, transform 0.15s;
+}
+
+.teamRadiant.slotSecret {
+  box-shadow: 0 0 16px rgba(74, 222, 128, 0.18);
+}
+
+.teamDire.slotSecret {
+  box-shadow: 0 0 16px rgba(248, 113, 113, 0.16);
+}
+
+.slotSecret:hover {
+  border-color: rgba(120, 170, 255, 0.8);
+  transform: scale(1.02);
+}
+
+.slotSecret:active {
+  transform: scale(0.98);
+}
+
+.secretGlow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 80% at 50% 50%,
+    rgba(80, 60, 140, 0.6) 0%,
+    rgba(40, 30, 80, 0.4) 50%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.secretSwirl {
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(100, 80, 180, 0.25) 60deg,
+    rgba(60, 100, 200, 0.2) 120deg,
+    transparent 180deg,
+    rgba(120, 60, 200, 0.2) 240deg,
+    rgba(80, 80, 180, 0.25) 300deg
+  );
+  animation: secretSwirl 8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes secretSwirl {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.guessLabel {
+  position: relative;
+  z-index: 1;
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: rgba(200, 190, 255, 0.95);
+}
+
+.questionMark {
+  position: relative;
+  z-index: 1;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: rgba(180, 170, 255, 0.9);
+}
