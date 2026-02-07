@@ -16,6 +16,7 @@ async function fetchJson<T>(path: string): Promise<T> {
 
 /** Преобразует ответ бэкенда в формат доски. team: 0 = Radiant, 1 = Dire. */
 export function transformDraftToGame(slots: BackendDraftSlot[]): GameDraft {
+  const matchId = slots[0]?.match_id;
   const sorted = [...slots].sort((a, b) => a.order - b.order);
   const radiant = { bans: [] as number[], picks: [] as number[] };
   const dire = { bans: [] as number[], picks: [] as number[] };
@@ -52,6 +53,7 @@ export function transformDraftToGame(slots: BackendDraftSlot[]): GameDraft {
   }
 
   return {
+    matchId,
     radiant: { bans: radiant.bans, picks: radiant.picks },
     dire: { bans: dire.bans, picks: dire.picks },
     secretPick: {
