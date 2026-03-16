@@ -34,6 +34,16 @@ export default function App() {
         }
       }
 
+      // Предзагружаем логотипы команд
+      if (gameData.radiantTeam?.logoUrl) {
+        const img = new Image();
+        img.src = gameData.radiantTeam.logoUrl;
+      }
+      if (gameData.direTeam?.logoUrl) {
+        const img = new Image();
+        img.src = gameData.direTeam.logoUrl;
+      }
+
       setGame(gameData);
       setLoading(false);
     } catch (e) {
@@ -114,8 +124,14 @@ export default function App() {
                     >
                       {result === "correct" ? "CONGRATS!" : "WRONG!"}
                     </h2>
-                    <p className="text-sm text-white/60">TODAY'S HERO IS:</p>
                   </div>
+
+                  {/* Информация о лиге и командах */}
+                  {game.league && (
+                    <div className="text-center text-white/60 text-xs">
+                      <p className="font-semibold">{game.league.name}</p>
+                    </div>
+                  )}
 
                   {/* Информация о герое */}
                   <div className="text-center">
@@ -136,10 +152,51 @@ export default function App() {
                       />
                     </div>
 
-                    {/* Статистика */}
-                    <div className="text-white/70 text-sm mb-4">
-                      <p>ATTEMPTS: 11</p>
-                      <p>FALCONS - VP 11.11.2026</p>
+                    {/* Статистика команд */}
+                    <div className="text-white/70 text-sm mb-4 w-full">
+                      <div className="flex gap-6 justify-center items-start mb-3">
+                        {/* Radiant Team */}
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="w-16 h-16 bg-slate-800/50 rounded flex items-center justify-center overflow-hidden">
+                            {game.radiantTeam?.logoUrl ? (
+                              <img
+                                src={game.radiantTeam.logoUrl}
+                                alt={game.radiantTeam.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-2xl text-slate-600">
+                                🛡️
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-semibold text-center">
+                            {game.radiantTeam?.name || "RADIANT"}
+                          </span>
+                        </div>
+
+                        <span className="text-white/40 mt-8">vs</span>
+
+                        {/* Dire Team */}
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="w-16 h-16 bg-slate-800/50 rounded flex items-center justify-center overflow-hidden">
+                            {game.direTeam?.logoUrl ? (
+                              <img
+                                src={game.direTeam.logoUrl}
+                                alt={game.direTeam.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-2xl text-slate-600">
+                                ⚔️
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-xs font-semibold text-center">
+                            {game.direTeam?.name || "DIRE"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
 

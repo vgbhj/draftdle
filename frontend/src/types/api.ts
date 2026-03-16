@@ -2,7 +2,7 @@
  * Типы под контракт API.
  */
 
-export type HeroAttribute = 'str' | 'agi' | 'int' | 'universal';
+export type HeroAttribute = "str" | "agi" | "int" | "universal";
 
 export interface Hero {
   id: number;
@@ -24,7 +24,7 @@ export interface BackendDraftSlot {
   order: number;
 }
 
-export type TeamKind = 'radiant' | 'dire';
+export type TeamKind = "radiant" | "dire";
 
 export interface SecretPick {
   team: TeamKind;
@@ -58,4 +58,20 @@ export interface GameDraft {
   dire: TeamDraft;
   secretPick: SecretPick;
   picksBans?: PickBanSlot[];
+  radiantTeam?: TeamInfo;
+  direTeam?: TeamInfo;
+  league?: LeagueInfo;
+}
+
+export interface TeamInfo {
+  teamId: number;
+  name: string;
+  tag: string;
+  logoUrl: string;
+}
+
+export interface LeagueInfo {
+  leagueId: number;
+  name: string;
+  tier: string;
 }
