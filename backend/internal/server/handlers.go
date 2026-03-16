@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/vgbhj/draftdle/internal/draft/repository"
 	"github.com/vgbhj/draftdle/internal/draft/usecase"
 
@@ -19,6 +20,13 @@ func (s *Server) MapHandlers(e *echo.Echo) error {
 	draftHandler := draftHttp.NewDraftHandler(draftUC)
 
 	draftHttp.MapRoutes(draft, draftHandler)
+
+    e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
+        Root:   "../frontend/dist", 
+        Index:  "index.html",
+        HTML5:  true,           
+        Browse: false,
+    }))
 
 	return nil
 }

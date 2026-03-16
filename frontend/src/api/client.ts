@@ -9,8 +9,6 @@ import type {
   BackendDraftSlot,
   TeamKind,
   PickBanSlot,
-  TeamInfo,
-  LeagueInfo,
 } from "../types/api";
 import { HEROES_LIST } from "../data/heroes";
 
