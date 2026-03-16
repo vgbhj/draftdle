@@ -1,6 +1,5 @@
 import type { GameDraft, Hero, PickBanSlot } from '../types/api';
 import { DraftSlot } from '../components/DraftSlot';
-import styles from './DraftBoard.module.css';
 
 interface DraftBoardProps {
   game: GameDraft;
@@ -43,60 +42,59 @@ export function DraftBoard({ game, heroes, onGuess }: DraftBoardProps) {
     );
   };
 
-  const snakeClass = (order: number) => (order % 2 === 1 ? styles.snakeOdd : styles.snakeEven);
+  const snakeClass = (order: number) => (order % 2 === 1 ? 'translate-x-0.5' : '-translate-x-0.5');
 
   return (
-    <main className={styles.board}>
-      <div className={styles.header}>
-        <span className={styles.headerRadiant}>RADIANT</span>
-        <span className={styles.headerAxis}>№</span>
-        <span className={styles.headerDire}>DIRE</span>
+    <main className="flex-1 min-h-0 flex flex-col px-1 py-1">
+      <div className="grid grid-cols-[1fr_0.5rem_1fr] gap-2 items-center mb-1 flex-shrink-0">
+        <span className="text-center text-xs font-bold tracking-wider text-green-400/95">RADIANT</span>
+        <span className="text-center text-xs font-bold text-white/50 min-w-6">№</span>
+        <span className="text-center text-xs font-bold tracking-wider text-red-400/95">DIRE</span>
       </div>
 
-      <div className={styles.grid}>
+      <div className="flex flex-col gap-px flex-1 min-h-0 overflow-hidden">
         {Array.from({ length: ROWS }, (_, i) => i + 1).map((order) => {
           const slot = getSlotByOrder(picksBans, order);
-          const team = slot?.team === 0 ? 'radiant' : slot?.team === 1 ? 'dire' : null;
 
           const left = renderSlot(slot, 'radiant');
           const right = renderSlot(slot, 'dire');
 
-          const rowClassName = `${styles.row} ${order % 2 === 0 ? styles.rowEven : styles.rowOdd}`;
+          const rowClassName = `grid grid-cols-[1fr_0.5rem_1fr] gap-2 items-center flex-shrink-0 ${order % 2 === 0 ? 'relative -mt-2.5' : ''}`;
 
           return (
             <div key={order} className={rowClassName} data-order={order}>
               {/* Radiant lane: slot -> connector -> number mast (если ход Radiant) */}
-              <div className={styles.laneRadiant}>
+              <div className="flex items-center justify-end gap-1 min-w-0">
                 {left ? (
                   <>
                     {left}
-                    <span className={styles.connector} aria-hidden />
-                    <span className={`${styles.mastNumber} ${snakeClass(order)}`}>{order}</span>
+                    <span className="h-px bg-white/30 flex-1 min-w-3" aria-hidden />
+                    <span className={`w-5 text-center text-xs font-bold text-white/60 flex-shrink-0 ${snakeClass(order)}`}>{order}</span>
                   </>
                 ) : (
                   <>
-                    <span className={styles.laneSpacer} aria-hidden />
-                    <span className={styles.connectorSpacer} aria-hidden />
-                    <span className={styles.mastNumber} aria-hidden />
+                    <span className="w-0 h-0" aria-hidden />
+                    <span className="h-px opacity-0 flex-1 min-w-3" aria-hidden />
+                    <span className="w-5 text-center text-xs font-bold text-white/60 flex-shrink-0" aria-hidden />
                   </>
                 )}
               </div>
 
-              <div className={styles.midGap} aria-hidden />
+              <div aria-hidden />
 
               {/* Dire lane: number mast -> connector -> slot (если ход Dire) */}
-              <div className={styles.laneDire}>
+              <div className="flex items-center justify-start gap-1 min-w-0">
                 {right ? (
                   <>
-                    <span className={`${styles.mastNumber} ${snakeClass(order)}`}>{order}</span>
-                    <span className={styles.connector} aria-hidden />
+                    <span className={`w-5 text-center text-xs font-bold text-white/60 flex-shrink-0 ${snakeClass(order)}`}>{order}</span>
+                    <span className="h-px bg-white/30 flex-1 min-w-3" aria-hidden />
                     {right}
                   </>
                 ) : (
                   <>
-                    <span className={styles.mastNumber} aria-hidden />
-                    <span className={styles.connectorSpacer} aria-hidden />
-                    <span className={styles.laneSpacer} aria-hidden />
+                    <span className="w-5 text-center text-xs font-bold text-white/60 flex-shrink-0" aria-hidden />
+                    <span className="h-px opacity-0 flex-1 min-w-3" aria-hidden />
+                    <span className="w-0 h-0" aria-hidden />
                   </>
                 )}
               </div>
