@@ -3,7 +3,6 @@ import type { Hero, HeroAttribute } from '../types/api';
 import { HeroSearchBar } from '../components/HeroSearchBar';
 import { AttributeFilters } from '../components/AttributeFilters';
 import { HeroGrid } from '../components/HeroGrid';
-import styles from './HeroPicker.module.css';
 
 interface HeroPickerProps {
   heroes: Hero[];
@@ -41,8 +40,13 @@ export function HeroPicker({ heroes, onSelect, onClose }: HeroPickerProps) {
   );
 
   return (
-    <div className={styles.overlay} role="dialog" aria-modal="true" aria-label="Pick hero">
-      <div className={styles.panel}>
+    <div className="fixed inset-0 z-50 bg-slate-950/97 flex flex-col p-4" role="dialog" aria-modal="true" aria-label="Pick hero" style={{
+      paddingLeft: `max(1rem, env(safe-area-inset-left, 0))`,
+      paddingRight: `max(1rem, env(safe-area-inset-right, 0))`,
+      paddingBottom: `max(1rem, env(safe-area-inset-bottom, 0))`,
+      paddingTop: `max(1rem, env(safe-area-inset-top, 0))`,
+    }}>
+      <div className="flex flex-col flex-1 min-h-0 gap-2">
         <HeroSearchBar
           value={search}
           onChange={setSearch}

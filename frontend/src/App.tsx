@@ -4,7 +4,6 @@ import { fetchRandomGame, getHeroes } from './api/client';
 import { Header } from './components/Header';
 import { DraftBoard } from './screens/DraftBoard';
 import { HeroPicker } from './screens/HeroPicker';
-import styles from './App.module.css';
 
 export default function App() {
   const heroes = getHeroes();
@@ -13,21 +12,21 @@ export default function App() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [result, setResult] = useState<'correct' | 'wrong' | null>(null);
 
-const loadGame = useCallback(async () => {
-  setLoading(true);
-  setResult(null);
-  try {
-    const gameData = await fetchRandomGame();
-    if (gameData.matchId != null) {
-      console.log('[Draftdle] Match ID:', gameData.matchId);
+  const loadGame = useCallback(async () => {
+    setLoading(true);
+    setResult(null);
+    try {
+      const gameData = await fetchRandomGame();
+      if (gameData.matchId != null) {
+        console.log('[Draftdle] Match ID:', gameData.matchId);
+      }
+      setGame(gameData);
+      setLoading(false);
+    } catch (e) {
+      console.error(e);
+      setLoading(false);
     }
-    setGame(gameData);
-    setLoading(false);
-  } catch (e) {
-    console.error(e);
-    setLoading(false);
-  }
-}, []);
+  }, []);
 
   useEffect(() => {
     loadGame();
@@ -48,10 +47,10 @@ const loadGame = useCallback(async () => {
 
   if (loading) {
     return (
-      <div className={styles.app}>
-        <div className={styles.container}>
+      <div className="h-screen w-screen bg-slate-950 flex flex-col">
+        <div className="flex-1 flex flex-col">
           <Header />
-          <div className={styles.loading}>Loading...</div>
+          <div className="flex-1 flex items-center justify-center text-purple-100/90">Loading...</div>
         </div>
       </div>
     );
@@ -59,18 +58,18 @@ const loadGame = useCallback(async () => {
 
   if (!game) {
     return (
-      <div className={styles.app}>
-        <div className={styles.container}>
+      <div className="h-screen w-screen bg-slate-950 flex flex-col">
+        <div className="flex-1 flex flex-col">
           <Header />
-          <div className={styles.loading}>Failed to load game. Please try again.</div>
+          <div className="flex-1 flex items-center justify-center text-purple-100/90">Failed to load game. Please try again.</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={styles.app}>
-      <div className={styles.container}>
+    <div className="h-screen w-screen bg-slate-950 flex flex-col">
+      <div className="flex-1 flex flex-col">
         <Header />
         <DraftBoard game={game} heroes={heroes} onGuess={handleGuessClick} />
       </div>
@@ -83,11 +82,19 @@ const loadGame = useCallback(async () => {
       )}
       {result !== null && (
         <div
-          className={`${styles.result} ${result === 'correct' ? styles.resultCorrect : styles.resultWrong}`}
+          className={`fixed bottom-4 left-4 right-4 px-4 py-3 rounded-lg text-center font-semibold transition-all ${
+            result === 'correct'
+              ? 'bg-green-600/90 text-white'
+              : 'bg-red-600/90 text-white'
+          }`}
           role="status"
         >
-          {result === 'correct' ? 'Correct!' : 'Wrong. Try again!'}
-          <button type="button" className={styles.playAgain} onClick={loadGame}>
+          <div>{result === 'correct' ? 'Correct!' : 'Wrong. Try again!'}</div>
+          <button 
+            type="button" 
+            className="mt-2 px-4 py-1 bg-white/20 hover:bg-white/30 rounded transition-all"
+            onClick={loadGame}
+          >
             Play again
           </button>
         </div>
