@@ -18,12 +18,12 @@ export function DraftSlot({
   slotNumber,
   onGuess,
 }: DraftSlotProps) {
-  const teamGlowClass =
-    team === "radiant"
-      ? "border-green-400/60 shadow-[0_0_0_1px_rgba(74,222,128,0.25),0_0_14px_rgba(74,222,128,0.22)]"
-      : team === "dire"
-        ? "border-red-400/60 shadow-[0_0_0_1px_rgba(248,113,113,0.25),0_0_14px_rgba(248,113,113,0.2)]"
-        : "";
+  // const teamGlowClass =
+  //   team === "radiant"
+  //     ? "border-green-400/60 shadow-[0_0_0_1px_rgba(74,222,128,0.25),0_0_14px_rgba(74,222,128,0.22)]"
+  //     : team === "dire"
+  //       ? "border-red-400/60 shadow-[0_0_0_1px_rgba(248,113,113,0.25),0_0_14px_rgba(248,113,113,0.2)]"
+  //       : "";
 
   if (isSecret) {
     return (

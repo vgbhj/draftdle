@@ -13,15 +13,6 @@ function buildHeroesMap(heroes: Hero[]): Map<number, Hero> {
   return map;
 }
 
-function getSlotByOrder(
-  picksBans: PickBanSlot[],
-  order: number,
-): PickBanSlot | null {
-  return picksBans.find((p) => p.order === order) ?? null;
-}
-
-const ROWS = 24;
-
 export function DraftBoard({ game, heroes, onGuess }: DraftBoardProps) {
   const heroesMap = buildHeroesMap(heroes);
   const picksBans = game.picksBans ?? [];
