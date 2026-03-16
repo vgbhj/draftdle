@@ -21,6 +21,24 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100vh;
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   margin: 0;
   min-width: 320px;
