@@ -22,7 +22,7 @@ func (s *Server) MapHandlers(e *echo.Echo) error {
 	draftHttp.MapRoutes(draft, draftHandler)
 
     e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-        Root:   "../frontend/dist", 
+        Root:   "frontend/dist", 
         Index:  "index.html",
         HTML5:  true,           
         Browse: false,
