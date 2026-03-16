@@ -29,7 +29,7 @@ export function DraftSlot({
     return (
       <button
         type="button"
-        className={`relative w-full h-12 rounded border-2 border-blue-400/50 bg-slate-900/90 flex flex-col items-center justify-center gap-0 cursor-pointer transition-all hover:border-blue-400/80 hover:scale-105 active:scale-95 ${
+        className={`relative w-full h-12 rounded border-2 border-blue-400/50 bg-slate-900/90 flex flex-col items-center justify-center gap-0 cursor-pointer transition-all hover:border-blue-400/80 active:scale-95 ${
           team === "radiant"
             ? "shadow-lg shadow-green-500/15"
             : team === "dire"
