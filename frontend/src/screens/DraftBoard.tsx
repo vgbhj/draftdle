@@ -47,13 +47,13 @@ export function DraftBoard({ game, heroes, onGuess }: DraftBoardProps) {
             />
             <span className="h-px bg-white/20 flex-1 min-w-[10px]" />
             <span className="w-5 text-center text-[10px] font-bold text-white/40">
-              {slot.order}
+              {slot.order + 1}
             </span>
           </>
         ) : (
           <>
             <span className="w-5 text-center text-[10px] font-bold text-white/40">
-              {slot.order}
+              {slot.order + 1}
             </span>
             <span className="h-px bg-white/20 flex-1 min-w-[10px]" />
             <DraftSlot
@@ -84,12 +84,12 @@ export function DraftBoard({ game, heroes, onGuess }: DraftBoardProps) {
       {/* Основной контейнер с двумя колонками */}
       <div className="flex flex-1 min-h-0 gap-8">
         {/* Колонка Radiant */}
-        <div className="flex-1 flex flex-col gap-1 overflow-y-auto scrollbar-hide">
+        <div className="flex-1 flex flex-col gap-1 overflow-hidden justify-between">
           {radiantSlots.map((slot) => renderSingleSlot(slot, "radiant"))}
         </div>
 
         {/* Колонка Dire */}
-        <div className="flex-1 flex flex-col gap-1 overflow-y-auto scrollbar-hide">
+        <div className="flex-1 flex flex-col gap-1 overflow-hidden justify-between">
           {direSlots.map((slot) => renderSingleSlot(slot, "dire"))}
         </div>
       </div>
