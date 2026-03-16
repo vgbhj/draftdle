@@ -5,12 +5,14 @@ go 1.25.6
 require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
+	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/echo/v4 v4.15.0
 	golang.org/x/time v0.14.0
 	modernc.org/sqlite v1.44.3
 )
 
 require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
