@@ -147,7 +147,14 @@ export default function App() {
                   <button
                     type="button"
                     className="px-8 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg font-bold text-white transition-all cursor-pointer"
-                    onClick={loadGame}
+                    onClick={() => {
+                      if (game?.matchId) {
+                        window.open(
+                          `https://ru.dotabuff.com/matches/${game.matchId}`,
+                          "_blank",
+                        );
+                      }
+                    }}
                   >
                     CHECK MATCH
                   </button>
