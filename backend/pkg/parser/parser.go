@@ -16,6 +16,7 @@ import (
 
 	"golang.org/x/time/rate"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	_ "modernc.org/sqlite"
 )
@@ -48,10 +49,10 @@ type League struct {
 }
 
 type LeagueDB struct {
-	LeagueID int
-	Name     string
-	Tier     int
-	PatchID  int
+	LeagueID int    `db:"id"`
+	Name     string `db:"name"`
+	Tier     int    `db:"tier"`
+	PatchID  int    `db:"patch_id"`
 }
 
 type PicksBan struct {
@@ -69,9 +70,9 @@ type Match struct {
 }
 
 type Patch struct {
-	ID   int       `json:"id"`
-	Name string    `json:"name"`
-	Date time.Time `json:"date"`
+	ID   int       `json:"id" db:"id"`
+	Name string    `json:"name" db:"name"`
+	Date time.Time `json:"date" db:"data"`
 }
 
 func tierToInt(tier string) int {
@@ -238,6 +239,36 @@ func FetchLeagues() ([]LeagueDB, error) {
 	}
 
 	return filtered, nil
+}
+
+func FetchNewLeagues(db *sqlx.DB) ([]LeagueDB, error) {
+	leagues, err := FetchLeagues()
+	if err != nil {
+		return nil, err
+	}
+
+	existingIDs, err := GetExistingLeagueIDs(db)
+	if err != nil {
+		return nil, err
+	}
+
+	existingMap := make(map[int]bool)
+	for _, id := range existingIDs {
+		existingMap[id] = true
+	}
+
+	var newLeagues []LeagueDB
+	for _, league := range leagues {
+		if !existingMap[league.LeagueID] {
+			newLeagues = append(newLeagues, league)
+		}
+	}
+
+	if len(newLeagues) == 0 {
+		return newLeagues, nil
+	}
+
+	return newLeagues, nil
 }
 
 func FetchMatches(matchID int64) (*Match, error) {
@@ -432,7 +463,7 @@ CREATE TABLE IF NOT EXISTS picks_bans (
 )
 `
 
-func MigrateSchemaWithData(db *sql.DB) error {
+func MigrateSchemaWithData(db *sqlx.DB) error {
 	if _, err := db.Exec("PRAGMA foreign_keys = OFF"); err != nil {
 		return err
 	}
@@ -512,14 +543,14 @@ func MigrateSchemaWithData(db *sql.DB) error {
 	return nil
 }
 
-func InitDB(db *sql.DB) {
+func InitDB(db *sqlx.DB) {
 	_, err := db.Exec(createShema)
 	if err != nil {
 		log.Fatal("Error create tables:", err)
 	}
 }
 
-func DeleteLeaguesNotIn(db *sql.DB, leagueIDs []int) error {
+func DeleteLeaguesNotIn(db *sqlx.DB, leagueIDs []int) error {
 	if len(leagueIDs) == 0 {
 		return nil
 	}
@@ -555,8 +586,8 @@ func DeleteLeaguesNotIn(db *sql.DB, leagueIDs []int) error {
 	return err
 }
 
-func SavePatches(db *sql.DB, patches []Patch) error {
-	tx, err := db.Begin()
+func SavePatches(db *sqlx.DB, patches []Patch) error {
+	tx, err := db.Beginx()
 	if err != nil {
 		return err
 	}
@@ -566,7 +597,7 @@ func SavePatches(db *sql.DB, patches []Patch) error {
 		}
 	}()
 
-	stmt, err := tx.Prepare("INSERT OR IGNORE INTO patches (id, name, data) VALUES (?, ?, ?)")
+	stmt, err := tx.Preparex("INSERT OR IGNORE INTO patches (id, name, data) VALUES (?, ?, ?)")
 	if err != nil {
 		return err
 	}
@@ -582,8 +613,8 @@ func SavePatches(db *sql.DB, patches []Patch) error {
 	return tx.Commit()
 }
 
-func SaveLeagues(db *sql.DB, leagues []LeagueDB) error {
-	tx, err := db.Begin()
+func SaveLeagues(db *sqlx.DB, leagues []LeagueDB) error {
+	tx, err := db.Beginx()
 	if err != nil {
 		return err
 	}
@@ -593,7 +624,7 @@ func SaveLeagues(db *sql.DB, leagues []LeagueDB) error {
 		}
 	}()
 
-	stmt, err := tx.Prepare("INSERT OR IGNORE INTO leagues (id, name, tier, patch_id) VALUES (?, ?, ?, ?)")
+	stmt, err := tx.Preparex("INSERT OR IGNORE INTO leagues (id, name, tier, patch_id) VALUES (?, ?, ?, ?)")
 	if err != nil {
 		return err
 	}
@@ -610,8 +641,8 @@ func SaveLeagues(db *sql.DB, leagues []LeagueDB) error {
 	return tx.Commit()
 }
 
-func SavePicksBans(picksBans []PicksBan, matchID int64, tx *sql.Tx) error {
-	stmt, err := tx.Prepare("INSERT INTO picks_bans (match_id, is_pick, hero_id, team, \"order\") VALUES (?, ?, ?, ?, ?)")
+func SavePicksBans(picksBans []PicksBan, matchID int64, tx *sqlx.Tx) error {
+	stmt, err := tx.Preparex("INSERT INTO picks_bans (match_id, is_pick, hero_id, team, \"order\") VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		return err
 	}
@@ -628,7 +659,14 @@ func SavePicksBans(picksBans []PicksBan, matchID int64, tx *sql.Tx) error {
 	return nil
 }
 
-func GetLeagueByID(db *sql.DB, leagueID int) (*LeagueDB, error) {
+func GetExistingLeagueIDs(db *sqlx.DB) ([]int, error) {
+    var ids []int
+    err := db.Select(&ids, "SELECT id FROM leagues")
+    return ids, err
+}
+
+
+func GetLeagueByID(db *sqlx.DB, leagueID int) (*LeagueDB, error) {
 	league := &LeagueDB{}
 
 	query := `
@@ -637,7 +675,7 @@ func GetLeagueByID(db *sql.DB, leagueID int) (*LeagueDB, error) {
         WHERE id = ?
     `
 
-	err := db.QueryRow(query, leagueID).Scan(&league.LeagueID, &league.Name, &league.Tier, &league.PatchID)
+	err := db.Get(league, query, leagueID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("league not found: %d", leagueID)
@@ -648,8 +686,8 @@ func GetLeagueByID(db *sql.DB, leagueID int) (*LeagueDB, error) {
 	return league, nil
 }
 
-func SaveMatches(db *sql.DB, matches []Match) error {
-	tx, err := db.Begin()
+func SaveMatches(db *sqlx.DB, matches []Match) error {
+	tx, err := db.Beginx()
 	if err != nil {
 		return err
 	}
@@ -659,7 +697,7 @@ func SaveMatches(db *sql.DB, matches []Match) error {
 		}
 	}()
 
-	stmt, err := tx.Prepare("INSERT OR IGNORE INTO matches (id, league_id) VALUES (?, ?)")
+	stmt, err := tx.Preparex("INSERT OR IGNORE INTO matches (id, league_id) VALUES (?, ?)")
 	if err != nil {
 		return err
 	}
