@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -29,6 +30,7 @@ type DotaClient struct {
 	http    *http.Client
 	apiKey  string
 	limiter *rate.Limiter
+    useAPIKey  bool
 }
 
 var client *DotaClient
@@ -87,7 +89,7 @@ func tierToInt(tier string) int {
 	}
 }
 
-func FetchLeaguesForClean() ([]LeagueDB, error) {
+func FetchLeagues() ([]LeagueDB, error) {
 	req, err := http.NewRequest("GET", "https://www.datdota.com/api/leagues", nil)
 	if err != nil {
 		return nil, err
@@ -137,81 +139,6 @@ func FetchLeaguesForClean() ([]LeagueDB, error) {
 
 				defer func() { <-semaphore }()
 
-				patchID := 0
-
-				results <- LeagueDB{
-					LeagueID: l.LeagueID,
-					Name:     l.Name,
-					Tier:     tc,
-					PatchID:  patchID,
-				}
-				fmt.Println(i, len(leagues))
-			}(leagues[i], tierCode)
-		}
-	}
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	var filtered []LeagueDB
-	for leagueDB := range results {
-		filtered = append(filtered, leagueDB)
-	}
-
-	return filtered, nil
-}
-
-func FetchLeagues() ([]LeagueDB, error) {
-	req, err := http.NewRequest("GET", "https://www.datdota.com/api/leagues", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-
-	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
-	}
-
-	var leagues []League
-	var response LeagueResponse
-
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
-	}
-
-	leagues = response.Data
-
-	results := make(chan LeagueDB, len(leagues))
-	var wg sync.WaitGroup
-
-	semaphore := make(chan struct{}, 10)
-
-	// for inx, league := range leagues {
-	for i := 0; i < len(leagues); i++ {
-		tierCode := leagues[i].Tier.ID
-		if tierCode > 0 {
-			wg.Add(1)
-
-			go func(l League, tc int) {
-				defer wg.Done()
-
-				semaphore <- struct{}{}
-
-				defer func() { <-semaphore }()
-
 				match, err := FetchFirstLeagueMatch(l.LeagueID)
 				patchID := 0
 				if err == nil && match != nil {
@@ -224,7 +151,7 @@ func FetchLeagues() ([]LeagueDB, error) {
 					Tier:     tc,
 					PatchID:  patchID,
 				}
-				fmt.Println(i, len(leagues))
+				fmt.Println("FetchLeagues: ", i, l.LeagueID, len(leagues))
 			}(leagues[i], tierCode)
 		}
 	}
@@ -242,11 +169,11 @@ func FetchLeagues() ([]LeagueDB, error) {
 }
 
 func FetchNewLeagues(db *sqlx.DB) ([]LeagueDB, error) {
-	leagues, err := FetchLeagues()
+	leagues, err := FetchLeaguesForClean()
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println(leagues[:10])
 	existingIDs, err := GetExistingLeagueIDs(db)
 	if err != nil {
 		return nil, err
@@ -353,6 +280,9 @@ func FetchFirstLeagueMatch(leagueID int) (*Match, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+        log.Printf("API error: status %d, body: %s", resp.StatusCode, string(body))
+        
 		return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
 	}
 
@@ -731,7 +661,11 @@ func InitConfig() {
 }
 
 func InitClient(r rate.Limit, burst int) {
-	client = NewDotaClient(apiKey, r, burst)
+	if r == 0 && burst == 0 {
+        client = NewDotaClient(apiKey, rate.Inf, 1)
+    } else {
+        client = NewDotaClient(apiKey, r, burst)
+    }
 }
 
 func NewDotaClient(apiKey string, r rate.Limit, burst int) *DotaClient {
@@ -741,6 +675,7 @@ func NewDotaClient(apiKey string, r rate.Limit, burst int) *DotaClient {
 		},
 		apiKey:  apiKey,
 		limiter: rate.NewLimiter(r, burst),
+		useAPIKey: false,
 	}
 }
 
@@ -756,9 +691,9 @@ func (c *DotaClient) Get(urlStr string) (*http.Response, error) {
 		return nil, err
 	}
 	q := u.Query()
-	if strings.Contains(u.Host, "opendota.com") {
-		q.Set("api_key", c.apiKey)
-	}
+	if c.useAPIKey && strings.Contains(u.Host, "opendota.com") {
+        q.Set("api_key", c.apiKey)
+    }
 	u.RawQuery = q.Encode()
 
 	// log.Printf("GET %s", u.String())
