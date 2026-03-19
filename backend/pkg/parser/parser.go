@@ -237,7 +237,7 @@ func FetchLeagues() ([]LeagueDB, error) {
 					Tier:     tc,
 					PatchID:  patchID,
 				}
-				fmt.Println("FetchLeagues: ", i, l.LeagueID, len(leagues))
+				log.Println("FetchLeagues: ", i, l.LeagueID, len(leagues))
 			}(leagues[i], tierCode)
 		}
 	}
@@ -263,7 +263,6 @@ func FetchNewLeagues(db *sqlx.DB) ([]LeagueDB, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	existingMap := make(map[int]bool)
 	for _, id := range existingIDs {
 		existingMap[id] = true
@@ -273,6 +272,10 @@ func FetchNewLeagues(db *sqlx.DB) ([]LeagueDB, error) {
 	for _, league := range leagues {
 		if !existingMap[league.LeagueID] {
 			if league.Tier.ID < 3 {
+				if  league.LeagueID < 0 {
+					continue
+				}
+				log.Println(league.LeagueID)
 				newLeague, err := FetchLeague(league.LeagueID)
 				if err != nil {
 					return nil, err
@@ -280,9 +283,9 @@ func FetchNewLeagues(db *sqlx.DB) ([]LeagueDB, error) {
 				newLeagues = append(newLeagues, newLeague)
 			}
 		}
-		if len(newLeagues) > 10 {
-			break
-		}
+		// if len(newLeagues) > 10 {
+		// 	break
+		// }
 	}
 
 	if len(newLeagues) == 0 {
@@ -418,7 +421,7 @@ func FetchAllLeaguesMatches(leagues []LeagueDB) ([]Match, error) {
 				return
 			}
 			results <- matches
-			fmt.Println(i, len(matches), len(leagues))
+			log.Println(i, len(matches), len(leagues))
 		}(leagues[i])
 	}
 

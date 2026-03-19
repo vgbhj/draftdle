@@ -29,19 +29,19 @@ func main() {
 
 	newLeagues, err := parser.FetchNewLeagues(db)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
 
 	fmt.Println(newLeagues)
 	if err := parser.SaveLeagues(db, newLeagues); err != nil {
-		fmt.Printf("Error saving leagues: %v\n", err)
+		log.Printf("Error saving leagues: %v\n", err)
 	}
 
 	matches, err := parser.FetchAllLeaguesMatches(newLeagues)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
@@ -52,6 +52,25 @@ func main() {
 	}
 
 	// обновление матчей у последних N лиг
-
 	
+	updateLeaguesIDs, err := parser.GetLastNLeagues(db, 5)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	var updateMatches []parser.Match
+	for id := range updateLeaguesIDs {
+		matches, err := parser.FetchLeagueMatches(id)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		updateMatches = append(updateMatches, matches...)
+	}
+
+	fmt.Println(len(matches))
+	if err := parser.SaveMatches(db, updateMatches); err != nil {
+		fmt.Printf("Error saving matches: %v\n", err)
+		return
+	}
 }
