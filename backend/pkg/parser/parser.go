@@ -50,6 +50,12 @@ type League struct {
 	Tier     TierInfo `json:"tier"`
 }
 
+type LeagueOpenDota struct {
+	LeagueID int      `json:"leagueid"`
+	Name     string   `json:"name"`
+	Tier     string	  `json:"tier"`
+}
+
 type LeagueDB struct {
 	LeagueID int    `db:"id"`
 	Name     string `db:"name"`
@@ -89,7 +95,77 @@ func tierToInt(tier string) int {
 	}
 }
 
-func FetchLeagues() ([]LeagueDB, error) {
+func FetchLeagueIDs() ([]int, error) {
+    req, err := http.NewRequest("GET", "https://www.datdota.com/api/leagues", nil)
+    if err != nil {
+        return nil, err
+    }
+
+    req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+
+    httpClient := &http.Client{
+        Timeout: 10 * time.Second,
+    }
+
+    resp, err := httpClient.Do(req)
+    if err != nil {
+        return nil, err
+    }
+
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
+    }
+
+    var response LeagueResponse
+    if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+        return nil, err
+    }
+
+    var leagueIDs []int
+    for _, league := range response.Data {
+        leagueIDs = append(leagueIDs, league.LeagueID)
+    }
+
+    return leagueIDs, nil
+}
+
+func FetchLeague(leagueID int) (LeagueDB, error) {
+    url := fmt.Sprintf("https://api.opendota.com/api/leagues/%d", leagueID)
+    resp, err := client.Get(url)
+    if err != nil {
+        return LeagueDB{}, err
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        body, _ := io.ReadAll(resp.Body)
+        log.Printf("API error: status %d, body: %s", resp.StatusCode, string(body))
+        return LeagueDB{}, fmt.Errorf("API error: status %d", resp.StatusCode)
+    }
+
+    var league LeagueOpenDota
+    if err := json.NewDecoder(resp.Body).Decode(&league); err != nil {
+        return LeagueDB{}, err
+    }
+
+    match, err := FetchFirstLeagueMatch(league.LeagueID)
+    patchID := 0
+    if err == nil && match != nil {
+        patchID = match.Patch
+    }
+
+    return LeagueDB{
+        LeagueID: league.LeagueID,
+        Name:     league.Name,
+        Tier:     tierToInt(league.Tier),
+        PatchID:  patchID,
+    }, nil
+}
+
+
+func FetchLeaguesDatdota() ([]League, error){
 	req, err := http.NewRequest("GET", "https://www.datdota.com/api/leagues", nil)
 	if err != nil {
 		return nil, err
@@ -119,7 +195,17 @@ func FetchLeagues() ([]LeagueDB, error) {
 		return nil, err
 	}
 
+
 	leagues = response.Data
+
+	return leagues, nil
+}
+
+func FetchLeagues() ([]LeagueDB, error) {
+	leagues, err := FetchLeaguesDatdota()
+	if err != nil {
+		return nil, err
+	}
 
 	results := make(chan LeagueDB, len(leagues))
 	var wg sync.WaitGroup
@@ -169,11 +255,10 @@ func FetchLeagues() ([]LeagueDB, error) {
 }
 
 func FetchNewLeagues(db *sqlx.DB) ([]LeagueDB, error) {
-	leagues, err := FetchLeaguesForClean()
+	leagues, err := FetchLeaguesDatdota()
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(leagues[:10])
 	existingIDs, err := GetExistingLeagueIDs(db)
 	if err != nil {
 		return nil, err
@@ -187,7 +272,16 @@ func FetchNewLeagues(db *sqlx.DB) ([]LeagueDB, error) {
 	var newLeagues []LeagueDB
 	for _, league := range leagues {
 		if !existingMap[league.LeagueID] {
-			newLeagues = append(newLeagues, league)
+			if league.Tier.ID < 3 {
+				newLeague, err := FetchLeague(league.LeagueID)
+				if err != nil {
+					return nil, err
+				}
+				newLeagues = append(newLeagues, newLeague)
+			}
+		}
+		if len(newLeagues) > 10 {
+			break
 		}
 	}
 
@@ -589,6 +683,23 @@ func SavePicksBans(picksBans []PicksBan, matchID int64, tx *sqlx.Tx) error {
 	return nil
 }
 
+func GetLastNLeagues(db *sqlx.DB, n int) ([]LeagueDB, error) {
+    query := `
+        SELECT id, name, tier, patch_id
+        FROM leagues
+        ORDER BY id DESC, patch_id DESC
+        LIMIT ?
+    `
+
+    var leagues []LeagueDB
+    err := db.Select(&leagues, query, n)
+    if err != nil {
+        return nil, err
+    }
+
+    return leagues, nil
+}
+
 func GetExistingLeagueIDs(db *sqlx.DB) ([]int, error) {
     var ids []int
     err := db.Select(&ids, "SELECT id FROM leagues")
@@ -675,7 +786,7 @@ func NewDotaClient(apiKey string, r rate.Limit, burst int) *DotaClient {
 		},
 		apiKey:  apiKey,
 		limiter: rate.NewLimiter(r, burst),
-		useAPIKey: false,
+		useAPIKey: true,
 	}
 }
 
