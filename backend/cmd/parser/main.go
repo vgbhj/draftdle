@@ -3,15 +3,20 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/vgbhj/draftdle/pkg/parser"
+	"golang.org/x/time/rate"
 	_ "modernc.org/sqlite"
 )
 
 func main() {
 	parser.InitConfig()
-	parser.InitClient(0, 0) 
+	parser.InitClient(rate.Every(time.Minute/3000), 50)
+	// parser.InitClient(rate.Every(time.Second), 1)
+	// parser.InitClient(0, 0) 
+
 
 	db, err := sqlx.Open("sqlite", "./data/dota.db")
 
@@ -19,11 +24,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
-
-	// обновление матчей у последних N лиг
-	
-	match, err := parser.FetchFirstLeagueMatch(19435)
-	fmt.Println(match)
 
 	// обновлять лиги → подсасываем все матчи
 
@@ -50,4 +50,8 @@ func main() {
 		fmt.Printf("Error saving matches: %v\n", err)
 		return
 	}
+
+	// обновление матчей у последних N лиг
+
+	
 }
