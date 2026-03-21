@@ -690,7 +690,7 @@ func GetLastNLeagues(db *sqlx.DB, n int) ([]LeagueDB, error) {
     query := `
         SELECT id, name, tier, patch_id
         FROM leagues
-        ORDER BY id DESC, patch_id DESC
+        ORDER BY patch_id DESC, id DESC
         LIMIT ?
     `
 
