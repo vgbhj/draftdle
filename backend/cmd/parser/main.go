@@ -12,10 +12,9 @@ import (
 )
 
 func main() {
-	parser.InitConfig()
-	parser.InitClient(rate.Every(time.Minute/3000), 50)
-	// parser.InitClient(rate.Every(time.Second), 1)
-	// parser.InitClient(0, 0) 
+	parser.InitConfig(false, rate.Every(time.Second), 1)
+	// parser.InitClient(true,rate.Every(time.Minute/3000), 50)
+	// parser.InitClient(true, 0, 0)
 
 
 	db, err := sqlx.Open("sqlite", "./data/dota.db")
@@ -25,6 +24,20 @@ func main() {
 	}
 	defer db.Close()
 
+    parser.InitDB(db)
+
+	updateDatabase(db)
+
+	ticker := time.NewTicker(1 * time.Hour)
+    defer ticker.Stop()
+
+	for range ticker.C {
+        updateDatabase(db)
+    }
+}
+
+
+func updateDatabase(db *sqlx.DB) {
 	// обновлять лиги → подсасываем все матчи
 
 	newLeagues, err := parser.FetchNewLeagues(db)

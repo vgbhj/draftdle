@@ -1,5 +1,5 @@
-import type { Hero } from '../types/api';
-import { getHeroImageUrlFromHero } from '../utils/heroImages';
+import type { Hero } from "../types/api";
+import { getHeroImageUrlFromHero } from "../utils/heroImages";
 
 interface HeroGridProps {
   heroes: Hero[];
@@ -18,11 +18,13 @@ export function HeroGrid({ heroes, onSelect }: HeroGridProps) {
           aria-label={hero.name}
         >
           <img
-            src={getHeroImageUrlFromHero(hero, 'horizontal')}
+            src={getHeroImageUrlFromHero(hero, "horizontal")}
             alt=""
             className="w-full aspect-square object-cover rounded bg-black/90"
           />
-          <span className="text-xs text-purple-100/90 text-center leading-tight overflow-hidden text-ellipsis whitespace-nowrap w-full">{hero.name}</span>
+          <span className="text-xs text-purple-100/90 text-center leading-tight overflow-hidden text-ellipsis whitespace-nowrap w-full">
+            {hero.name}
+          </span>
         </button>
       ))}
     </div>

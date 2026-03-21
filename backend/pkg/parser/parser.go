@@ -421,7 +421,7 @@ func FetchAllLeaguesMatches(leagues []LeagueDB) ([]Match, error) {
 				return
 			}
 			results <- matches
-			log.Println(i, len(matches), len(leagues))
+			log.Println("FetchAllLeaguesMatches: ", i, len(matches), len(leagues))
 		}(leagues[i])
 	}
 
@@ -762,34 +762,38 @@ func SaveMatches(db *sqlx.DB, matches []Match) error {
 	return tx.Commit()
 }
 
-func InitConfig() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file:", err)
+func InitConfig(enableApi bool, r rate.Limit, burst int) {
+	if enableApi{
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file:", err)
+		}
+
+		apiKey = os.Getenv("API_KEY")
+		if apiKey == "" {
+			log.Fatal("API_KEY not found in .env file")
+		}
 	}
 
-	apiKey = os.Getenv("API_KEY")
-	if apiKey == "" {
-		log.Fatal("API_KEY not found in .env file")
-	}
+	InitClient(enableApi, r, burst)
 }
 
-func InitClient(r rate.Limit, burst int) {
+func InitClient(enableApi bool, r rate.Limit, burst int) {
 	if r == 0 && burst == 0 {
-        client = NewDotaClient(apiKey, rate.Inf, 1)
+        client = NewDotaClient(enableApi, apiKey, rate.Inf, 1)
     } else {
-        client = NewDotaClient(apiKey, r, burst)
+        client = NewDotaClient(enableApi, apiKey, r, burst)
     }
 }
 
-func NewDotaClient(apiKey string, r rate.Limit, burst int) *DotaClient {
+func NewDotaClient(enableApi bool, apiKey string, r rate.Limit, burst int) *DotaClient {
 	return &DotaClient{
 		http: &http.Client{
 			Timeout: 10 * time.Second,
 		},
 		apiKey:  apiKey,
 		limiter: rate.NewLimiter(r, burst),
-		useAPIKey: true,
+		useAPIKey: enableApi,
 	}
 }
 
