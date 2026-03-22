@@ -16,8 +16,66 @@ func NewDraftReposiroty(db *sqlx.DB) draft.Repository {
 	}
 }
 
-func (r *DraftRepository) GetDraftByMatchID(match_id int64) ([]*models.Draft, error) {
-	var drafts []*models.Draft
+func (r *DraftRepository) GetMatchFull(matchID int64) (*models.MatchFull, error) {
+    var result struct {
+        models.Match
+        RadiantName string `db:"r_name"`
+        RadiantTag  string `db:"r_tag"`
+        RadiantLogo string `db:"r_logo"`
+        DireName    string `db:"d_name"`
+        DireTag     string `db:"d_tag"`
+        DireLogo    string `db:"d_logo"`
+        LeagueName  string `db:"l_name"`
+    }
+
+    queryMatch := `
+    SELECT 
+        m.id, m.league_id, m.radiant_team_id, m.dire_team_id,
+        COALESCE(rt.name, '') as r_name, 
+        COALESCE(rt.tag, '') as r_tag, 
+        COALESCE(rt.logo_url, '') as r_logo,
+        COALESCE(dt.name, '') as d_name, 
+        COALESCE(dt.tag, '') as d_tag, 
+        COALESCE(dt.logo_url, '') as d_logo,
+        COALESCE(l.name, '') as l_name
+    FROM matches m
+    LEFT JOIN teams rt ON m.radiant_team_id = rt.id
+    LEFT JOIN teams dt ON m.dire_team_id = dt.id
+    LEFT JOIN leagues l ON m.league_id = l.id
+    WHERE m.id = $1`
+
+    err := r.db.Get(&result, queryMatch, matchID)
+    if err != nil {
+        return nil, err
+    }
+
+	slots, err := r.GetDraftByMatchID(matchID)
+    if err != nil {
+        return nil, err
+    }
+
+    return &models.MatchFull{
+        MatchID: result.ID,
+        Slots:   slots,
+        RadiantTeam: &models.Team{
+            Name:    result.RadiantName,
+            Tag:     result.RadiantTag,
+            LogoURL: result.RadiantLogo,
+        },
+        DireTeam: &models.Team{
+            Name:    result.DireName,
+            Tag:     result.DireTag,
+            LogoURL: result.DireLogo,
+        },
+        League: &models.League{
+            ID:   result.LeagueID,
+            Name: result.LeagueName,
+        },
+    }, nil
+}
+
+func (r *DraftRepository) GetDraftByMatchID(match_id int64) ([]models.Draft, error) {
+	var drafts []models.Draft
 
 	query := `
 		SELECT id, match_id, is_pick, hero_id, team, "order"

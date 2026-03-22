@@ -15,18 +15,18 @@ func NewDraftUseCase(repo draft.Repository) draft.DraftUC {
 	}
 }
 
-func (u *DraftUC) GetRandomDraft() ([]*models.Draft, error) {
+func (u *DraftUC) GetRandomDraft() (*models.MatchFull, error) {
 	match, err := u.repo.GetRandomMatchByLastPatch()
 
 	if err != nil {
 		return nil, err
 	}
 
-	drafts, err := u.repo.GetDraftByMatchID(match.ID)
+	matchFull, err := u.repo.GetMatchFull(match.ID)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return drafts, nil
+	return matchFull, nil
 }

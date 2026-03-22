@@ -71,10 +71,21 @@ type PicksBan struct {
 }
 
 type Match struct {
-	MatchID  int64      `json:"match_id"`
-	LeagueID int        `json:"leagueid"`
-	Patch    int        `json:"patch"`
-	PicksBan []PicksBan `json:"picks_bans"`
+    MatchID       int64      `json:"match_id"`
+    LeagueID      int        `json:"leagueid"`
+    Patch         int        `json:"patch"`
+    RadiantTeamID int        `json:"radiant_team_id"`      
+    DireTeamID    int        `json:"dire_team_id"`        
+    RadiantTeam   *Team      `json:"radiant_team"`         
+    DireTeam      *Team      `json:"dire_team"`        
+    PicksBan      []PicksBan `json:"picks_bans"`
+}
+
+type Team struct {
+    TeamID  int    `json:"team_id" db:"id"`
+    Name    string `json:"name" db:"name"`
+    Tag     string `json:"tag" db:"tag"`
+    LogoURL string `json:"logo_url" db:"logo_url"`
 }
 
 type Patch struct {
@@ -456,127 +467,6 @@ func FetchPatches() ([]Patch, error) {
 	return patches, nil
 }
 
-const createShema = `
-PRAGMA foreign_keys = ON;
-
-CREATE TABLE IF NOT EXISTS patches (
-	id INTEGER PRIMARY KEY,
-	name TEXT,
-	data DATETIME
-);
-
-CREATE TABLE IF NOT EXISTS leagues (
-	id INTEGER PRIMARY KEY,
-	name TEXT,
-	tier INTEGER,
-	patch_id INTEGER,
-	FOREIGN KEY (patch_id) REFERENCES patches(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS matches (
-	id INTEGER PRIMARY KEY,
-	league_id INTEGER,
-	FOREIGN KEY (league_id) REFERENCES leagues(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS picks_bans (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	match_id INTEGER,
-	is_pick BOOLEAN,
-	hero_id INTEGER,
-	team INTEGER,
-	"order" INTEGER,
-	FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
-)
-`
-
-func MigrateSchemaWithData(db *sqlx.DB) error {
-	if _, err := db.Exec("PRAGMA foreign_keys = OFF"); err != nil {
-		return err
-	}
-	defer db.Exec("PRAGMA foreign_keys = ON")
-
-	tempSchema := `
-    CREATE TABLE patches_new (
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-        data DATETIME
-    );
-
-    CREATE TABLE leagues_new (
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-        tier INTEGER,
-        patch_id INTEGER,
-        FOREIGN KEY (patch_id) REFERENCES patches_new(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE matches_new (
-        id INTEGER PRIMARY KEY,
-        league_id INTEGER,
-        FOREIGN KEY (league_id) REFERENCES leagues_new(id) ON DELETE CASCADE
-    );
-
-    CREATE TABLE picks_bans_new (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        match_id INTEGER,
-        is_pick BOOLEAN,
-        hero_id INTEGER,
-        team INTEGER,
-        "order" INTEGER,
-        FOREIGN KEY (match_id) REFERENCES matches_new(id) ON DELETE CASCADE
-    );
-    `
-
-	if _, err := db.Exec(tempSchema); err != nil {
-		return err
-	}
-
-	copyQueries := []string{
-		"INSERT INTO patches_new SELECT * FROM patches",
-		"INSERT INTO leagues_new SELECT * FROM leagues",
-		"INSERT INTO matches_new SELECT * FROM matches",
-		"INSERT INTO picks_bans_new SELECT * FROM picks_bans",
-	}
-
-	for _, query := range copyQueries {
-		if _, err := db.Exec(query); err != nil {
-			if !strings.Contains(err.Error(), "no such table") {
-				return err
-			}
-		}
-	}
-
-	oldTables := []string{"picks_bans", "matches", "leagues", "patches"}
-	for _, table := range oldTables {
-		if _, err := db.Exec(fmt.Sprintf("DROP TABLE IF EXISTS %s", table)); err != nil {
-			return err
-		}
-	}
-
-	renameQueries := []string{
-		"ALTER TABLE patches_new RENAME TO patches",
-		"ALTER TABLE leagues_new RENAME TO leagues",
-		"ALTER TABLE matches_new RENAME TO matches",
-		"ALTER TABLE picks_bans_new RENAME TO picks_bans",
-	}
-
-	for _, query := range renameQueries {
-		if _, err := db.Exec(query); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func InitDB(db *sqlx.DB) {
-	_, err := db.Exec(createShema)
-	if err != nil {
-		log.Fatal("Error create tables:", err)
-	}
-}
-
 func DeleteLeaguesNotIn(db *sqlx.DB, leagueIDs []int) error {
 	if len(leagueIDs) == 0 {
 		return nil
@@ -731,37 +621,70 @@ func GetLeagueByID(db *sqlx.DB, leagueID int) (*LeagueDB, error) {
 }
 
 func SaveMatches(db *sqlx.DB, matches []Match) error {
-	tx, err := db.Beginx()
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-		}
-	}()
+    tx, err := db.Beginx()
+    if err != nil {
+        return err
+    }
+    defer func() {
+        if p := recover(); p != nil {
+            tx.Rollback()
+            panic(p)
+        } else if err != nil {
+            tx.Rollback()
+        }
+    }()
 
-	stmt, err := tx.Preparex("INSERT OR IGNORE INTO matches (id, league_id) VALUES (?, ?)")
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
+    teamStmt, err := tx.Preparex(`
+        INSERT OR IGNORE INTO teams (id, name, tag, logo_url) 
+        VALUES (?, ?, ?, ?)
+    `)
+    if err != nil {
+        return err
+    }
+    defer teamStmt.Close()
 
-	for _, m := range matches {
-		_, err := stmt.Exec(m.MatchID, m.LeagueID)
-		if err != nil {
-			fmt.Printf("Error inserting match %d: %v\n", m.MatchID, err)
-			continue
-		}
+    matchStmt, err := tx.Preparex(`
+        INSERT OR IGNORE INTO matches (id, league_id, radiant_team_id, dire_team_id) 
+        VALUES (?, ?, ?, ?)
+    `)
+    if err != nil {
+        return err
+    }
+    defer matchStmt.Close()
 
-		if err := SavePicksBans(m.PicksBan, m.MatchID, tx); err != nil {
-			fmt.Printf("Error saving picks_bans for match %d: %v\n", m.MatchID, err)
-		}
-	}
+    for _, m := range matches {
+        if m.RadiantTeam != nil && m.RadiantTeam.TeamID != 0 {
+            _, err = teamStmt.Exec(m.RadiantTeam.TeamID, m.RadiantTeam.Name, m.RadiantTeam.Tag, m.RadiantTeam.LogoURL)
+            if err != nil {
+                log.Printf("Error saving radiant team %d: %v", m.RadiantTeam.TeamID, err)
+            }
+        }
 
-	return tx.Commit()
+        if m.DireTeam != nil && m.DireTeam.TeamID != 0 {
+            _, err = teamStmt.Exec(m.DireTeam.TeamID, m.DireTeam.Name, m.DireTeam.Tag, m.DireTeam.LogoURL)
+            if err != nil {
+                log.Printf("Error saving dire team %d: %v", m.DireTeam.TeamID, err)
+            }
+        }
+
+        var rID, dID interface{}
+        if m.RadiantTeamID != 0 { rID = m.RadiantTeamID }
+        if m.DireTeamID != 0 { dID = m.DireTeamID }
+
+        _, err = matchStmt.Exec(m.MatchID, m.LeagueID, rID, dID)
+        if err != nil {
+            log.Printf("Error inserting match %d: %v\n", m.MatchID, err)
+            continue
+        }
+
+        if err := SavePicksBans(m.PicksBan, m.MatchID, tx); err != nil {
+            log.Printf("Error saving picks_bans for match %d: %v\n", m.MatchID, err)
+        }
+    }
+
+    err = tx.Commit()
+    return err
 }
-
 func InitConfig(enableApi bool, r rate.Limit, burst int) {
 	if enableApi{
 		err := godotenv.Load()
@@ -789,7 +712,7 @@ func InitClient(enableApi bool, r rate.Limit, burst int) {
 func NewDotaClient(enableApi bool, apiKey string, r rate.Limit, burst int) *DotaClient {
 	return &DotaClient{
 		http: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 30 * time.Second,
 		},
 		apiKey:  apiKey,
 		limiter: rate.NewLimiter(r, burst),
