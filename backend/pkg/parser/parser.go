@@ -27,10 +27,10 @@ var requestCount atomic.Int64
 var mu sync.Mutex
 
 type DotaClient struct {
-	http    *http.Client
-	apiKey  string
-	limiter *rate.Limiter
-    useAPIKey  bool
+	http      *http.Client
+	apiKey    string
+	limiter   *rate.Limiter
+	useAPIKey bool
 }
 
 var client *DotaClient
@@ -51,9 +51,9 @@ type League struct {
 }
 
 type LeagueOpenDota struct {
-	LeagueID int      `json:"leagueid"`
-	Name     string   `json:"name"`
-	Tier     string	  `json:"tier"`
+	LeagueID int    `json:"leagueid"`
+	Name     string `json:"name"`
+	Tier     string `json:"tier"`
 }
 
 type LeagueDB struct {
@@ -71,21 +71,21 @@ type PicksBan struct {
 }
 
 type Match struct {
-    MatchID       int64      `json:"match_id"`
-    LeagueID      int        `json:"leagueid"`
-    Patch         int        `json:"patch"`
-    RadiantTeamID int        `json:"radiant_team_id"`      
-    DireTeamID    int        `json:"dire_team_id"`        
-    RadiantTeam   *Team      `json:"radiant_team"`         
-    DireTeam      *Team      `json:"dire_team"`        
-    PicksBan      []PicksBan `json:"picks_bans"`
+	MatchID       int64      `json:"match_id"`
+	LeagueID      int        `json:"leagueid"`
+	Patch         int        `json:"patch"`
+	RadiantTeamID int        `json:"radiant_team_id"`
+	DireTeamID    int        `json:"dire_team_id"`
+	RadiantTeam   *Team      `json:"radiant_team"`
+	DireTeam      *Team      `json:"dire_team"`
+	PicksBan      []PicksBan `json:"picks_bans"`
 }
 
 type Team struct {
-    TeamID  int    `json:"team_id" db:"id"`
-    Name    string `json:"name" db:"name"`
-    Tag     string `json:"tag" db:"tag"`
-    LogoURL string `json:"logo_url" db:"logo_url"`
+	TeamID  int    `json:"team_id" db:"id"`
+	Name    string `json:"name" db:"name"`
+	Tag     string `json:"tag" db:"tag"`
+	LogoURL string `json:"logo_url" db:"logo_url"`
 }
 
 type Patch struct {
@@ -107,76 +107,75 @@ func tierToInt(tier string) int {
 }
 
 func FetchLeagueIDs() ([]int, error) {
-    req, err := http.NewRequest("GET", "https://www.datdota.com/api/leagues", nil)
-    if err != nil {
-        return nil, err
-    }
+	req, err := http.NewRequest("GET", "https://www.datdota.com/api/leagues", nil)
+	if err != nil {
+		return nil, err
+	}
 
-    req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
 
-    httpClient := &http.Client{
-        Timeout: 10 * time.Second,
-    }
+	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
+	}
 
-    resp, err := httpClient.Do(req)
-    if err != nil {
-        return nil, err
-    }
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
 
-    defer resp.Body.Close()
+	defer resp.Body.Close()
 
-    if resp.StatusCode != http.StatusOK {
-        return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
-    }
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
+	}
 
-    var response LeagueResponse
-    if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-        return nil, err
-    }
+	var response LeagueResponse
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
+	}
 
-    var leagueIDs []int
-    for _, league := range response.Data {
-        leagueIDs = append(leagueIDs, league.LeagueID)
-    }
+	var leagueIDs []int
+	for _, league := range response.Data {
+		leagueIDs = append(leagueIDs, league.LeagueID)
+	}
 
-    return leagueIDs, nil
+	return leagueIDs, nil
 }
 
 func FetchLeague(leagueID int) (LeagueDB, error) {
-    url := fmt.Sprintf("https://api.opendota.com/api/leagues/%d", leagueID)
-    resp, err := client.Get(url)
-    if err != nil {
-        return LeagueDB{}, err
-    }
-    defer resp.Body.Close()
+	url := fmt.Sprintf("https://api.opendota.com/api/leagues/%d", leagueID)
+	resp, err := client.Get(url)
+	if err != nil {
+		return LeagueDB{}, err
+	}
+	defer resp.Body.Close()
 
-    if resp.StatusCode != http.StatusOK {
-        body, _ := io.ReadAll(resp.Body)
-        log.Printf("API error: status %d, body: %s", resp.StatusCode, string(body))
-        return LeagueDB{}, fmt.Errorf("API error: status %d", resp.StatusCode)
-    }
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		log.Printf("API error: status %d, body: %s", resp.StatusCode, string(body))
+		return LeagueDB{}, fmt.Errorf("API error: status %d", resp.StatusCode)
+	}
 
-    var league LeagueOpenDota
-    if err := json.NewDecoder(resp.Body).Decode(&league); err != nil {
-        return LeagueDB{}, err
-    }
+	var league LeagueOpenDota
+	if err := json.NewDecoder(resp.Body).Decode(&league); err != nil {
+		return LeagueDB{}, err
+	}
 
-    match, err := FetchFirstLeagueMatch(league.LeagueID)
-    patchID := 0
-    if err == nil && match != nil {
-        patchID = match.Patch
-    }
+	match, err := FetchFirstLeagueMatch(league.LeagueID)
+	patchID := 0
+	if err == nil && match != nil {
+		patchID = match.Patch
+	}
 
-    return LeagueDB{
-        LeagueID: league.LeagueID,
-        Name:     league.Name,
-        Tier:     tierToInt(league.Tier),
-        PatchID:  patchID,
-    }, nil
+	return LeagueDB{
+		LeagueID: league.LeagueID,
+		Name:     league.Name,
+		Tier:     tierToInt(league.Tier),
+		PatchID:  patchID,
+	}, nil
 }
 
-
-func FetchLeaguesDatdota() ([]League, error){
+func FetchLeaguesDatdota() ([]League, error) {
 	req, err := http.NewRequest("GET", "https://www.datdota.com/api/leagues", nil)
 	if err != nil {
 		return nil, err
@@ -205,7 +204,6 @@ func FetchLeaguesDatdota() ([]League, error){
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
-
 
 	leagues = response.Data
 
@@ -283,7 +281,7 @@ func FetchNewLeagues(db *sqlx.DB) ([]LeagueDB, error) {
 	for _, league := range leagues {
 		if !existingMap[league.LeagueID] {
 			if league.Tier.ID < 3 {
-				if  league.LeagueID < 0 {
+				if league.LeagueID < 0 {
 					continue
 				}
 				log.Println(league.LeagueID)
@@ -304,6 +302,130 @@ func FetchNewLeagues(db *sqlx.DB) ([]LeagueDB, error) {
 	}
 
 	return newLeagues, nil
+}
+
+func resolvedMatchTeamIDs(m *Match) (radiant, dire int) {
+	radiant = m.RadiantTeamID
+	if radiant == 0 && m.RadiantTeam != nil {
+		radiant = m.RadiantTeam.TeamID
+	}
+	dire = m.DireTeamID
+	if dire == 0 && m.DireTeam != nil {
+		dire = m.DireTeam.TeamID
+	}
+	return radiant, dire
+}
+
+func UpdateMatchesTeamIDs(db *sqlx.DB, onlyMissing bool) error {
+	var ids []int64
+	q := `SELECT id FROM matches`
+	if onlyMissing {
+		q = `SELECT id FROM matches WHERE
+			radiant_team_id IS NULL OR dire_team_id IS NULL OR
+			radiant_team_id = 0 OR dire_team_id = 0`
+	}
+	if err := db.Select(&ids, q); err != nil {
+		return fmt.Errorf("list match ids: %w", err)
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+
+	type fetched struct {
+		id int64
+		m  *Match
+	}
+	out := make([]fetched, len(ids))
+
+	const fetchParallel = 20
+	jobs := make(chan int, len(ids))
+	for i := range ids {
+		jobs <- i
+	}
+	close(jobs)
+
+	var wg sync.WaitGroup
+	for w := 0; w < fetchParallel; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range jobs {
+				id := ids[i]
+				m, err := FetchMatches(id)
+				log.Println(i, len(jobs))
+				if err != nil {
+					log.Printf("UpdateMatchesTeamIDs: match %d: %v", id, err)
+					out[i].id = id
+					continue
+				}
+				out[i].id = id
+				out[i].m = m
+			}
+		}()
+	}
+	wg.Wait()
+
+	const writeBatch = 500
+	for start := 0; start < len(out); start += writeBatch {
+		log.Println(start)
+		end := start + writeBatch
+		if end > len(out) {
+			end = len(out)
+		}
+		tx, err := db.Beginx()
+		if err != nil {
+			return fmt.Errorf("begin tx: %w", err)
+		}
+		batchOK := true
+		for _, row := range out[start:end] {
+			if row.m == nil {
+				continue
+			}
+			id := row.id
+			m := row.m
+			radiant, dire := resolvedMatchTeamIDs(m)
+
+			if m.RadiantTeam != nil && m.RadiantTeam.TeamID != 0 {
+				if _, err := tx.Exec(`INSERT OR IGNORE INTO teams (id, name, tag, logo_url) VALUES (?, ?, ?, ?)`,
+					m.RadiantTeam.TeamID, m.RadiantTeam.Name, m.RadiantTeam.Tag, m.RadiantTeam.LogoURL); err != nil {
+					log.Printf("UpdateMatchesTeamIDs: match %d team radiant: %v", id, err)
+					batchOK = false
+					break
+				}
+			}
+			if m.DireTeam != nil && m.DireTeam.TeamID != 0 {
+				if _, err := tx.Exec(`INSERT OR IGNORE INTO teams (id, name, tag, logo_url) VALUES (?, ?, ?, ?)`,
+					m.DireTeam.TeamID, m.DireTeam.Name, m.DireTeam.Tag, m.DireTeam.LogoURL); err != nil {
+					log.Printf("UpdateMatchesTeamIDs: match %d team dire: %v", id, err)
+					batchOK = false
+					break
+				}
+			}
+			if radiant != 0 {
+				if _, err := tx.Exec(`UPDATE matches SET radiant_team_id = ? WHERE id = ?`, radiant, id); err != nil {
+					log.Printf("UpdateMatchesTeamIDs: match %d update radiant: %v", id, err)
+					batchOK = false
+					break
+				}
+			}
+			if dire != 0 {
+				if _, err := tx.Exec(`UPDATE matches SET dire_team_id = ? WHERE id = ?`, dire, id); err != nil {
+					log.Printf("UpdateMatchesTeamIDs: match %d update dire: %v", id, err)
+					batchOK = false
+					break
+				}
+			}
+		}
+		if !batchOK {
+			_ = tx.Rollback()
+			return fmt.Errorf("write batch [%d:%d)", start, end)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit batch [%d:%d): %w", start, end, err)
+		}
+	}
+
+	return nil
 }
 
 func FetchMatches(matchID int64) (*Match, error) {
@@ -389,8 +511,8 @@ func FetchFirstLeagueMatch(leagueID int) (*Match, error) {
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-        log.Printf("API error: status %d, body: %s", resp.StatusCode, string(body))
-        
+		log.Printf("API error: status %d, body: %s", resp.StatusCode, string(body))
+
 		return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
 	}
 
@@ -577,28 +699,27 @@ func SavePicksBans(picksBans []PicksBan, matchID int64, tx *sqlx.Tx) error {
 }
 
 func GetLastNLeagues(db *sqlx.DB, n int) ([]LeagueDB, error) {
-    query := `
+	query := `
         SELECT id, name, tier, patch_id
         FROM leagues
         ORDER BY patch_id DESC, id DESC
         LIMIT ?
     `
 
-    var leagues []LeagueDB
-    err := db.Select(&leagues, query, n)
-    if err != nil {
-        return nil, err
-    }
+	var leagues []LeagueDB
+	err := db.Select(&leagues, query, n)
+	if err != nil {
+		return nil, err
+	}
 
-    return leagues, nil
+	return leagues, nil
 }
 
 func GetExistingLeagueIDs(db *sqlx.DB) ([]int, error) {
-    var ids []int
-    err := db.Select(&ids, "SELECT id FROM leagues")
-    return ids, err
+	var ids []int
+	err := db.Select(&ids, "SELECT id FROM leagues")
+	return ids, err
 }
-
 
 func GetLeagueByID(db *sqlx.DB, leagueID int) (*LeagueDB, error) {
 	league := &LeagueDB{}
@@ -621,72 +742,77 @@ func GetLeagueByID(db *sqlx.DB, leagueID int) (*LeagueDB, error) {
 }
 
 func SaveMatches(db *sqlx.DB, matches []Match) error {
-    tx, err := db.Beginx()
-    if err != nil {
-        return err
-    }
-    defer func() {
-        if p := recover(); p != nil {
-            tx.Rollback()
-            panic(p)
-        } else if err != nil {
-            tx.Rollback()
-        }
-    }()
+	tx, err := db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			tx.Rollback()
+		}
+	}()
 
-    teamStmt, err := tx.Preparex(`
+	teamStmt, err := tx.Preparex(`
         INSERT OR IGNORE INTO teams (id, name, tag, logo_url) 
         VALUES (?, ?, ?, ?)
     `)
-    if err != nil {
-        return err
-    }
-    defer teamStmt.Close()
+	if err != nil {
+		return err
+	}
+	defer teamStmt.Close()
 
-    matchStmt, err := tx.Preparex(`
+	matchStmt, err := tx.Preparex(`
         INSERT OR IGNORE INTO matches (id, league_id, radiant_team_id, dire_team_id) 
         VALUES (?, ?, ?, ?)
     `)
-    if err != nil {
-        return err
-    }
-    defer matchStmt.Close()
+	if err != nil {
+		return err
+	}
+	defer matchStmt.Close()
 
-    for _, m := range matches {
-        if m.RadiantTeam != nil && m.RadiantTeam.TeamID != 0 {
-            _, err = teamStmt.Exec(m.RadiantTeam.TeamID, m.RadiantTeam.Name, m.RadiantTeam.Tag, m.RadiantTeam.LogoURL)
-            if err != nil {
-                log.Printf("Error saving radiant team %d: %v", m.RadiantTeam.TeamID, err)
-            }
-        }
+	for _, m := range matches {
+		if m.RadiantTeam != nil && m.RadiantTeam.TeamID != 0 {
+			_, err = teamStmt.Exec(m.RadiantTeam.TeamID, m.RadiantTeam.Name, m.RadiantTeam.Tag, m.RadiantTeam.LogoURL)
+			if err != nil {
+				log.Printf("Error saving radiant team %d: %v", m.RadiantTeam.TeamID, err)
+			}
+		}
 
-        if m.DireTeam != nil && m.DireTeam.TeamID != 0 {
-            _, err = teamStmt.Exec(m.DireTeam.TeamID, m.DireTeam.Name, m.DireTeam.Tag, m.DireTeam.LogoURL)
-            if err != nil {
-                log.Printf("Error saving dire team %d: %v", m.DireTeam.TeamID, err)
-            }
-        }
+		if m.DireTeam != nil && m.DireTeam.TeamID != 0 {
+			_, err = teamStmt.Exec(m.DireTeam.TeamID, m.DireTeam.Name, m.DireTeam.Tag, m.DireTeam.LogoURL)
+			if err != nil {
+				log.Printf("Error saving dire team %d: %v", m.DireTeam.TeamID, err)
+			}
+		}
 
-        var rID, dID interface{}
-        if m.RadiantTeamID != 0 { rID = m.RadiantTeamID }
-        if m.DireTeamID != 0 { dID = m.DireTeamID }
+		rr, dd := resolvedMatchTeamIDs(&m)
+		var rID, dID interface{}
+		if rr != 0 {
+			rID = rr
+		}
+		if dd != 0 {
+			dID = dd
+		}
 
-        _, err = matchStmt.Exec(m.MatchID, m.LeagueID, rID, dID)
-        if err != nil {
-            log.Printf("Error inserting match %d: %v\n", m.MatchID, err)
-            continue
-        }
+		_, err = matchStmt.Exec(m.MatchID, m.LeagueID, rID, dID)
+		if err != nil {
+			log.Printf("Error inserting match %d: %v\n", m.MatchID, err)
+			continue
+		}
 
-        if err := SavePicksBans(m.PicksBan, m.MatchID, tx); err != nil {
-            log.Printf("Error saving picks_bans for match %d: %v\n", m.MatchID, err)
-        }
-    }
+		if err := SavePicksBans(m.PicksBan, m.MatchID, tx); err != nil {
+			log.Printf("Error saving picks_bans for match %d: %v\n", m.MatchID, err)
+		}
+	}
 
-    err = tx.Commit()
-    return err
+	err = tx.Commit()
+	return err
 }
 func InitConfig(enableApi bool, r rate.Limit, burst int) {
-	if enableApi{
+	if enableApi {
 		err := godotenv.Load()
 		if err != nil {
 			log.Fatal("Error loading .env file:", err)
@@ -703,10 +829,10 @@ func InitConfig(enableApi bool, r rate.Limit, burst int) {
 
 func InitClient(enableApi bool, r rate.Limit, burst int) {
 	if r == 0 && burst == 0 {
-        client = NewDotaClient(enableApi, apiKey, rate.Inf, 1)
-    } else {
-        client = NewDotaClient(enableApi, apiKey, r, burst)
-    }
+		client = NewDotaClient(enableApi, apiKey, rate.Inf, 1)
+	} else {
+		client = NewDotaClient(enableApi, apiKey, r, burst)
+	}
 }
 
 func NewDotaClient(enableApi bool, apiKey string, r rate.Limit, burst int) *DotaClient {
@@ -714,8 +840,8 @@ func NewDotaClient(enableApi bool, apiKey string, r rate.Limit, burst int) *Dota
 		http: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		apiKey:  apiKey,
-		limiter: rate.NewLimiter(r, burst),
+		apiKey:    apiKey,
+		limiter:   rate.NewLimiter(r, burst),
 		useAPIKey: enableApi,
 	}
 }
@@ -733,8 +859,8 @@ func (c *DotaClient) Get(urlStr string) (*http.Response, error) {
 	}
 	q := u.Query()
 	if c.useAPIKey && strings.Contains(u.Host, "opendota.com") {
-        q.Set("api_key", c.apiKey)
-    }
+		q.Set("api_key", c.apiKey)
+	}
 	u.RawQuery = q.Encode()
 
 	// log.Printf("GET %s", u.String())

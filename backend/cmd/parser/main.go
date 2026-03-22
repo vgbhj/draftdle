@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -17,7 +21,6 @@ func main() {
 	parser.InitConfig(true, rate.Every(time.Second/25), 50)
 	// parser.InitConfig(true, 0, 0)
 
-
 	db, err := sqlx.Open("sqlite", "./data/dota.db")
 
 	if err != nil {
@@ -25,56 +28,34 @@ func main() {
 	}
 	defer db.Close()
 
-	leagues, err := parser.FetchLeagues()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
+	var wg sync.WaitGroup
 
-	fmt.Println(leagues)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		runUpdater(ctx, db)
+	}()
 
-	matches, err := parser.FetchAllLeaguesMatches(leagues)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	log.Println("Service started. Press Ctrl+C to stop.")
+	<-ctx.Done()
+	log.Println("Shutting down gracefully...")
 
-	fmt.Println(len(matches))
-	fmt.Println(matches[0])
-	if err := parser.SaveMatches(db, matches); err != nil {
-		fmt.Printf("Error saving matches: %v\n", err)
-		return
-	}
-
-	// ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	// defer stop()
-
-	// var wg sync.WaitGroup
-
-	// wg.Add(1)
-	// go func(){
-	// 	defer wg.Done()
-	// 	runUpdater(ctx, db)
-	// }()
-
-	// log.Println("Service started. Press Ctrl+C to stop.")
-	// <-ctx.Done()
-	// log.Println("Shutting down gracefully...")
-	
-	// wg.Wait()
-	// log.Println("Service stopped.")
+	wg.Wait()
+	log.Println("Service stopped.")
 }
 
-func runUpdater(ctx context.Context, db *sqlx.DB){
+func runUpdater(ctx context.Context, db *sqlx.DB) {
 	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
-	
+
 	log.Println("Running initial update...")
 	updateDatabase(ctx, db)
 
 	for {
-		select{
+		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
@@ -84,11 +65,10 @@ func runUpdater(ctx context.Context, db *sqlx.DB){
 	}
 }
 
-
 func updateDatabase(ctx context.Context, db *sqlx.DB) {
-	defer func(){
+	defer func() {
 		if r := recover(); r != nil {
-		log.Printf("Recovered from panic in updateDatabase: %v", r)
+			log.Printf("Recovered from panic in updateDatabase: %v", r)
 		}
 	}()
 
@@ -100,7 +80,6 @@ func updateDatabase(ctx context.Context, db *sqlx.DB) {
 		log.Printf("Failed to refresh recent matches: %v", err)
 	}
 }
-
 
 func syncNewLeagues(ctx context.Context, db *sqlx.DB) error {
 	newLeagues, err := parser.FetchNewLeagues(db)
@@ -139,14 +118,14 @@ func refreshRecentLeaguesMatches(ctx context.Context, db *sqlx.DB, n int) error 
 	var allMatches []parser.Match
 	for _, l := range updateLeagues {
 		select {
-        case <-ctx.Done():
-            return ctx.Err() 
-        default:
-        }
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
 		matches, err := parser.FetchLeagueMatches(l.LeagueID)
 		if err != nil {
 			log.Printf("Warning: failed to fetch matches for league %d: %v", l.LeagueID, err)
-			continue 
+			continue
 		}
 		allMatches = append(allMatches, matches...)
 	}
