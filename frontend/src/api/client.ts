@@ -1,5 +1,5 @@
 /**
- * API-клиент. Бэкенд: GET api/v1/draft → массив слотов драфта.
+ * API-клиент. GET /api/v1/draft — полный матч (слоты, команды, лига).
  * Список героев — статичный на фронте (см. data/heroes.ts).
  */
 
@@ -7,6 +7,7 @@ import type {
   GameDraft,
   Hero,
   BackendDraftSlot,
+  BackendDraftResponse,
   TeamKind,
   PickBanSlot,
 } from "../types/api";
@@ -22,8 +23,15 @@ async function fetchJson<T>(path: string): Promise<T> {
 
 /** Преобразует ответ бэкенда в формат доски. team: 0 = Radiant, 1 = Dire. */
 export function transformDraftToGame(slots: BackendDraftSlot[]): GameDraft {
-  const matchId = slots[0]?.match_id;
   const sorted = [...slots].sort((a, b) => a.order - b.order);
+  const seenOrder = new Set<number>();
+  const unique: BackendDraftSlot[] = [];
+  for (const s of sorted) {
+    if (seenOrder.has(s.order)) continue;
+    seenOrder.add(s.order);
+    unique.push(s);
+  }
+  const matchId = unique[0]?.match_id;
   const radiant = { bans: [] as number[], picks: [] as number[] };
   const dire = { bans: [] as number[], picks: [] as number[] };
   const picksBans: PickBanSlot[] = [];
@@ -31,7 +39,7 @@ export function transformDraftToGame(slots: BackendDraftSlot[]): GameDraft {
   let lastPick: { team: TeamKind; heroId: number; pickIndex: number } | null =
     null;
 
-  for (const s of sorted) {
+  for (const s of unique) {
     const team = s.team === 0 ? "radiant" : "dire";
     const side = team === "radiant" ? radiant : dire;
     if (s.is_pick) {
@@ -72,52 +80,38 @@ export function transformDraftToGame(slots: BackendDraftSlot[]): GameDraft {
   };
 }
 
-/** Запрос случайной игры (драфт). */
-export async function fetchRandomGame(): Promise<GameDraft> {
-  const slots = await fetchJson<BackendDraftSlot[]>("/api/v1/draft");
-  const game = transformDraftToGame(slots);
-
-  // Получаем информацию о командах и лиге из OpenDota, если есть matchId
-  if (game.matchId) {
-    try {
-      const matchData = await fetchJson<any>(
-        `https://api.opendota.com/api/matches/${game.matchId}`,
-      );
-
-      // Информация о командах
-      if (matchData.radiant_team) {
-        game.radiantTeam = {
-          teamId: matchData.radiant_team.team_id,
-          name: matchData.radiant_team.name,
-          tag: matchData.radiant_team.tag,
-          logoUrl: matchData.radiant_team.logo_url,
-        };
-      }
-
-      if (matchData.dire_team) {
-        game.direTeam = {
-          teamId: matchData.dire_team.team_id,
-          name: matchData.dire_team.name,
-          tag: matchData.dire_team.tag,
-          logoUrl: matchData.dire_team.logo_url,
-        };
-      }
-
-      // Информация о лиге
-      if (matchData.league) {
-        game.league = {
-          leagueId: matchData.league.leagueid,
-          name: matchData.league.name,
-          tier: matchData.league.tier,
-        };
-      }
-    } catch (e) {
-      console.warn("Failed to fetch match details from OpenDota:", e);
-      // Продолжаем работу без данных об командах/лиге
-    }
+export function matchFullToGameDraft(res: BackendDraftResponse): GameDraft {
+  const game = transformDraftToGame(res.slots);
+  game.matchId = res.match_id;
+  if (res.radiant_team) {
+    game.radiantTeam = {
+      teamId: res.radiant_team.team_id,
+      name: res.radiant_team.name,
+      tag: res.radiant_team.tag,
+      logoUrl: res.radiant_team.logo_url,
+    };
   }
-
+  if (res.dire_team) {
+    game.direTeam = {
+      teamId: res.dire_team.team_id,
+      name: res.dire_team.name,
+      tag: res.dire_team.tag,
+      logoUrl: res.dire_team.logo_url,
+    };
+  }
+  if (res.league) {
+    game.league = {
+      leagueId: res.league.id,
+      name: res.league.name,
+      tier: String(res.league.tier),
+    };
+  }
   return game;
+}
+
+export async function fetchDraft(): Promise<GameDraft> {
+  const res = await fetchJson<BackendDraftResponse>("/api/v1/draft");
+  return matchFullToGameDraft(res);
 }
 
 /** Список всех героев (статичный, с фронта). */

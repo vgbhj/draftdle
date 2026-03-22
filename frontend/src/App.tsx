@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import type { GameDraft, Hero } from "./types/api";
-import { fetchRandomGame, getHeroes } from "./api/client";
+import { fetchDraft, getHeroes } from "./api/client";
 import { getHeroImageUrlFromHero } from "./utils/heroImages";
 import { Header } from "./components/Header";
 import { DraftBoard } from "./screens/DraftBoard";
@@ -17,7 +17,7 @@ export default function App() {
     setLoading(true);
     setResult(null);
     try {
-      const gameData = await fetchRandomGame();
+      const gameData = await fetchDraft();
       if (gameData.matchId != null) {
         console.log("[Draftdle] Match ID:", gameData.matchId);
       }
@@ -58,6 +58,16 @@ export default function App() {
 
   const handleGuessClick = useCallback(() => setPickerOpen(true), []);
   const handlePickerClose = useCallback(() => setPickerOpen(false), []);
+
+  const unavailableHeroIds = useMemo(() => {
+    const s = new Set<number>();
+    if (!game?.picksBans) return s;
+    for (const slot of game.picksBans) {
+      if (slot.isSecret) continue;
+      s.add(slot.hero_id);
+    }
+    return s;
+  }, [game]);
 
   const handleHeroSelect = useCallback(
     (hero: Hero) => {
@@ -106,6 +116,7 @@ export default function App() {
           heroes={heroes}
           onSelect={handleHeroSelect}
           onClose={handlePickerClose}
+          unavailableHeroIds={unavailableHeroIds}
         />
       )}
       {result !== null && game && (

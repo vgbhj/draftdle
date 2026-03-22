@@ -24,6 +24,29 @@ export interface BackendDraftSlot {
   order: number;
 }
 
+export interface BackendTeamPayload {
+  team_id: number;
+  name: string;
+  tag: string;
+  logo_url: string;
+}
+
+export interface BackendLeaguePayload {
+  id: number;
+  name: string;
+  tier: number;
+  patch_id: number;
+}
+
+/** GET /api/v1/draft — полный матч. */
+export interface BackendDraftResponse {
+  match_id: number;
+  slots: BackendDraftSlot[];
+  radiant_team?: BackendTeamPayload;
+  dire_team?: BackendTeamPayload;
+  league?: BackendLeaguePayload;
+}
+
 export type TeamKind = "radiant" | "dire";
 
 export interface SecretPick {
