@@ -4,10 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
-	"os/signal"
-	"sync"
-	"syscall"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -17,8 +13,8 @@ import (
 )
 
 func main() {
-	parser.InitConfig(false, rate.Every(time.Second), 1)
-	// parser.InitConfig(true,rate.Every(time.Minute/3000), 50)
+	// parser.InitConfig(false, rate.Every(time.Second), 1)
+	parser.InitConfig(true, rate.Every(time.Second/25), 50)
 	// parser.InitConfig(true, 0, 0)
 
 
@@ -29,25 +25,45 @@ func main() {
 	}
 	defer db.Close()
 
-    parser.InitDB(db)
+	leagues, err := parser.FetchLeagues()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
-	var wg sync.WaitGroup
+	fmt.Println(leagues)
 
-	wg.Add(1)
-	go func(){
-		defer wg.Done()
-		runUpdater(ctx, db)
-	}()
+	matches, err := parser.FetchAllLeaguesMatches(leagues)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	log.Println("Service started. Press Ctrl+C to stop.")
-	<-ctx.Done()
-	log.Println("Shutting down gracefully...")
+	fmt.Println(len(matches))
+	fmt.Println(matches[0])
+	if err := parser.SaveMatches(db, matches); err != nil {
+		fmt.Printf("Error saving matches: %v\n", err)
+		return
+	}
+
+	// ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	// defer stop()
+
+	// var wg sync.WaitGroup
+
+	// wg.Add(1)
+	// go func(){
+	// 	defer wg.Done()
+	// 	runUpdater(ctx, db)
+	// }()
+
+	// log.Println("Service started. Press Ctrl+C to stop.")
+	// <-ctx.Done()
+	// log.Println("Shutting down gracefully...")
 	
-	wg.Wait()
-	log.Println("Service stopped.")
+	// wg.Wait()
+	// log.Println("Service stopped.")
 }
 
 func runUpdater(ctx context.Context, db *sqlx.DB){
