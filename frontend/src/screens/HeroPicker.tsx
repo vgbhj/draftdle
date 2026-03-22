@@ -8,6 +8,8 @@ interface HeroPickerProps {
   heroes: Hero[];
   onSelect: (hero: Hero) => void;
   onClose: () => void;
+  /** Герои уже в драфте (кроме секретного слота) — нельзя выбрать. */
+  unavailableHeroIds?: ReadonlySet<number>;
 }
 
 function filterHeroes(
@@ -30,7 +32,12 @@ function filterHeroes(
   return list;
 }
 
-export function HeroPicker({ heroes, onSelect, onClose }: HeroPickerProps) {
+export function HeroPicker({
+  heroes,
+  onSelect,
+  onClose,
+  unavailableHeroIds,
+}: HeroPickerProps) {
   const [search, setSearch] = useState('');
   const [attribute, setAttribute] = useState<HeroAttribute | 'all'>('all');
 
@@ -54,7 +61,11 @@ export function HeroPicker({ heroes, onSelect, onClose }: HeroPickerProps) {
           onClose={onClose}
         />
         <AttributeFilters value={attribute} onChange={setAttribute} />
-        <HeroGrid heroes={filtered} onSelect={onSelect} />
+        <HeroGrid
+          heroes={filtered}
+          onSelect={onSelect}
+          unavailableIds={unavailableHeroIds}
+        />
       </div>
     </div>
   );

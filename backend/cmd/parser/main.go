@@ -17,8 +17,8 @@ import (
 )
 
 func main() {
-	// parser.InitConfig(false, rate.Every(time.Second), 1)
-	parser.InitConfig(true, rate.Every(time.Second/25), 50)
+	parser.InitConfig(false, rate.Every(time.Second), 1)
+	// parser.InitConfig(true, rate.Every(time.Second/25), 50)
 	// parser.InitConfig(true, 0, 0)
 
 	db, err := sqlx.Open("sqlite", "./data/dota.db")
