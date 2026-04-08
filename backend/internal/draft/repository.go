@@ -9,4 +9,6 @@ type Repository interface {
 	GetDraftByMatchID(matchID int64) ([]models.Draft, error)
 	GetRandomMatchByLastPatch() (*models.Match, error)
 	GetMatchFull(matchID int64) (*models.MatchFull, error)
+	GetDailyMatchID(date string) (int64, error)
+	SaveDailyMatchID(date string, matchID int64) error
 }
