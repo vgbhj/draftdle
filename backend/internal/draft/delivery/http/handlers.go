@@ -34,3 +34,17 @@ func (d *DraftHandler) Get() echo.HandlerFunc {
 		return c.JSON(http.StatusOK, draft)
 	}
 }
+
+func (d *DraftHandler) GetDaily() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		draft, err := d.draftUC.GetDailyDraft()
+		if err != nil {
+			log.Printf("GetDaily: %v", err)
+			return c.JSON(http.StatusInternalServerError, &ErrorResponse{
+				Message: "Failed to get daily draft",
+				Status:  http.StatusInternalServerError,
+			})
+		}
+		return c.JSON(http.StatusOK, draft)
+	}
+}

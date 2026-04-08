@@ -165,3 +165,17 @@ func (r *DraftRepository) GetRandomMatchByLastPatch() (*models.Match, error) {
 
 	return match, nil
 }
+
+func (r *DraftRepository) GetDailyMatchID(date string) (int64, error) {
+	var id int64
+	err := r.db.Get(&id, `SELECT match_id FROM daily_drafts WHERE date = ?`, date)
+	return id, err
+}
+
+func (r *DraftRepository) SaveDailyMatchID(date string, matchID int64) error {
+	_, err := r.db.Exec(
+		`INSERT OR IGNORE INTO daily_drafts (date, match_id) VALUES (?, ?)`,
+		date, matchID,
+	)
+	return err
+}

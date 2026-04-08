@@ -7,4 +7,5 @@ import (
 
 func MapRoutes(g *echo.Group, h draft.Handler) {
 	g.GET("", h.Get())
+	g.GET("/daily", h.GetDaily())
 }
