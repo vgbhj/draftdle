@@ -72,6 +72,10 @@ func updateDatabase(ctx context.Context, db *sqlx.DB) {
 		}
 	}()
 
+	if err := syncPatches(db); err != nil {
+		log.Printf("Failed to sync patches: %v", err)
+	}
+
 	if err := syncNewLeagues(ctx, db); err != nil {
 		log.Printf("Failed to sync new leagues: %v", err)
 	}
@@ -79,6 +83,20 @@ func updateDatabase(ctx context.Context, db *sqlx.DB) {
 	if err := refreshRecentLeaguesMatches(ctx, db, 5); err != nil {
 		log.Printf("Failed to refresh recent matches: %v", err)
 	}
+}
+
+func syncPatches(db *sqlx.DB) error {
+	patches, err := parser.FetchPatches()
+	if err != nil {
+		return fmt.Errorf("fetch patches: %w", err)
+	}
+
+	if err := parser.SavePatches(db, patches); err != nil {
+		return fmt.Errorf("save patches: %w", err)
+	}
+
+	log.Printf("Successfully synced %d patches", len(patches))
+	return nil
 }
 
 func syncNewLeagues(ctx context.Context, db *sqlx.DB) error {
