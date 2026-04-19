@@ -1,8 +1,10 @@
 package usecase
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"log"
 	"sync"
 	"time"
 
@@ -11,8 +13,9 @@ import (
 )
 
 type DraftUC struct {
-	repo  draft.Repository
-	daily dailyCache
+	repo    draft.Repository
+	fetcher draft.PlayerFetcher
+	daily   dailyCache
 }
 
 type dailyCache struct {
@@ -21,25 +24,25 @@ type dailyCache struct {
 	full *models.MatchFull
 }
 
-func NewDraftUseCase(repo draft.Repository) draft.DraftUC {
+func NewDraftUseCase(repo draft.Repository, fetcher draft.PlayerFetcher) draft.DraftUC {
 	return &DraftUC{
-		repo: repo,
+		repo:    repo,
+		fetcher: fetcher,
 	}
 }
 
 func (u *DraftUC) GetRandomDraft() (*models.MatchFull, error) {
 	match, err := u.repo.GetRandomMatchByLastPatch()
-
 	if err != nil {
 		return nil, err
 	}
 
 	matchFull, err := u.repo.GetMatchFull(match.ID)
-
 	if err != nil {
 		return nil, err
 	}
 
+	u.enrichWithPlayers(matchFull)
 	return matchFull, nil
 }
 
@@ -64,12 +67,36 @@ func (u *DraftUC) GetDailyDraft() (*models.MatchFull, error) {
 		return nil, err
 	}
 
+	u.enrichWithPlayers(full)
+
 	u.daily.mu.Lock()
 	u.daily.date = today
 	u.daily.full = full
 	u.daily.mu.Unlock()
 
 	return full, nil
+}
+
+func (u *DraftUC) enrichWithPlayers(full *models.MatchFull) {
+	players, err := u.repo.GetPlayersByMatchID(full.MatchID)
+	if err != nil {
+		log.Printf("Error getting players for match %d: %v", full.MatchID, err)
+		return
+	}
+	if len(players) > 0 {
+		full.Players = players
+		return
+	}
+
+	players, err = u.fetcher.FetchPlayers(context.Background(), full.MatchID)
+	if err != nil {
+		log.Printf("Error fetching players for match %d: %v", full.MatchID, err)
+		return
+	}
+	if err := u.repo.SavePlayersForMatch(full.MatchID, players); err != nil {
+		log.Printf("Error saving players for match %d: %v", full.MatchID, err)
+	}
+	full.Players = players
 }
 
 func (u *DraftUC) resolveDailyMatchID(today string) (int64, error) {

@@ -5,6 +5,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/vgbhj/draftdle/internal/draft/repository"
 	"github.com/vgbhj/draftdle/internal/draft/usecase"
+	"github.com/vgbhj/draftdle/pkg/parser"
 
 	draftHttp "github.com/vgbhj/draftdle/internal/draft/delivery/http"
 )
@@ -15,7 +16,7 @@ func (s *Server) MapHandlers(e *echo.Echo) error {
 
 	draftRepo := repository.NewDraftReposiroty(s.db)
 
-	draftUC := usecase.NewDraftUseCase(draftRepo)
+	draftUC := usecase.NewDraftUseCase(draftRepo, parser.NewPlayerFetcher())
 
 	draftHandler := draftHttp.NewDraftHandler(draftUC)
 

@@ -31,6 +31,16 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	for _, arg := range os.Args[1:] {
+		if arg == "--backfill-players" {
+			log.Println("Running players backfill...")
+			if err := parser.BackfillPlayers(ctx, db); err != nil {
+				log.Fatalf("Backfill failed: %v", err)
+			}
+			return
+		}
+	}
+
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -72,7 +82,7 @@ func updateDatabase(ctx context.Context, db *sqlx.DB) {
 		}
 	}()
 
-	if err := syncPatches(db); err != nil {
+	if err := syncPatches(ctx, db); err != nil {
 		log.Printf("Failed to sync patches: %v", err)
 	}
 
@@ -85,8 +95,8 @@ func updateDatabase(ctx context.Context, db *sqlx.DB) {
 	}
 }
 
-func syncPatches(db *sqlx.DB) error {
-	patches, err := parser.FetchPatches()
+func syncPatches(ctx context.Context, db *sqlx.DB) error {
+	patches, err := parser.FetchPatches(ctx)
 	if err != nil {
 		return fmt.Errorf("fetch patches: %w", err)
 	}
@@ -100,7 +110,7 @@ func syncPatches(db *sqlx.DB) error {
 }
 
 func syncNewLeagues(ctx context.Context, db *sqlx.DB) error {
-	newLeagues, err := parser.FetchNewLeagues(db)
+	newLeagues, err := parser.FetchNewLeagues(ctx, db)
 	if err != nil {
 		return fmt.Errorf("fetch new leagues: %w", err)
 	}
@@ -114,7 +124,7 @@ func syncNewLeagues(ctx context.Context, db *sqlx.DB) error {
 		return fmt.Errorf("save leagues: %w", err)
 	}
 
-	matches, err := parser.FetchAllLeaguesMatches(newLeagues)
+	matches, err := parser.FetchAllLeaguesMatches(ctx, newLeagues)
 	if err != nil {
 		return fmt.Errorf("fetch all leagues matches: %w", err)
 	}
@@ -140,7 +150,7 @@ func refreshRecentLeaguesMatches(ctx context.Context, db *sqlx.DB, n int) error 
 			return ctx.Err()
 		default:
 		}
-		matches, err := parser.FetchLeagueMatches(l.LeagueID)
+		matches, err := parser.FetchLeagueMatches(ctx, l.LeagueID)
 		if err != nil {
 			log.Printf("Warning: failed to fetch matches for league %d: %v", l.LeagueID, err)
 			continue

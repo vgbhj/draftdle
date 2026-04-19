@@ -179,3 +179,39 @@ func (r *DraftRepository) SaveDailyMatchID(date string, matchID int64) error {
 	)
 	return err
 }
+
+func (r *DraftRepository) GetPlayersByMatchID(matchID int64) (map[int]string, error) {
+	var rows []struct {
+		HeroID     int    `db:"hero_id"`
+		PlayerName string `db:"player_name"`
+	}
+	err := r.db.Select(&rows, `SELECT hero_id, player_name FROM players WHERE match_id = ?`, matchID)
+	if err != nil {
+		return nil, err
+	}
+	m := make(map[int]string, len(rows))
+	for _, row := range rows {
+		m[row.HeroID] = row.PlayerName
+	}
+	return m, nil
+}
+
+func (r *DraftRepository) SavePlayersForMatch(matchID int64, players map[int]string) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Preparex(`INSERT OR IGNORE INTO players (match_id, hero_id, player_name, team) VALUES (?, ?, ?, 0)`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+	for heroID, name := range players {
+		if _, err := stmt.Exec(matchID, heroID, name); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}

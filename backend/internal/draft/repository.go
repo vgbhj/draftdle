@@ -11,4 +11,6 @@ type Repository interface {
 	GetMatchFull(matchID int64) (*models.MatchFull, error)
 	GetDailyMatchID(date string) (int64, error)
 	SaveDailyMatchID(date string, matchID int64) error
+	GetPlayersByMatchID(matchID int64) (map[int]string, error)
+	SavePlayersForMatch(matchID int64, players map[int]string) error
 }
