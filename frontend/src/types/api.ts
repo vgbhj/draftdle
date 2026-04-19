@@ -3,12 +3,14 @@
  */
 
 export type HeroAttribute = "str" | "agi" | "int" | "universal";
+export type AttackType = "melee" | "ranged";
 
 export interface Hero {
   id: number;
   name: string;
   name_ru?: string;
   attribute: HeroAttribute;
+  attackType: AttackType;
   image?: string;
   /** Internal name for CDN (e.g. antimage, axe). */
   nameInternal?: string;
@@ -45,6 +47,7 @@ export interface BackendDraftResponse {
   radiant_team?: BackendTeamPayload;
   dire_team?: BackendTeamPayload;
   league?: BackendLeaguePayload;
+  players?: Record<string, string>;
 }
 
 export type TeamKind = "radiant" | "dire";
@@ -84,6 +87,7 @@ export interface GameDraft {
   radiantTeam?: TeamInfo;
   direTeam?: TeamInfo;
   league?: LeagueInfo;
+  players?: Record<string, string>;
 }
 
 export interface TeamInfo {

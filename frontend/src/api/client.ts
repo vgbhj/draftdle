@@ -106,11 +106,19 @@ export function matchFullToGameDraft(res: BackendDraftResponse): GameDraft {
       tier: String(res.league.tier),
     };
   }
+  if (res.players) {
+    game.players = res.players;
+  }
   return game;
 }
 
 export async function fetchDraft(): Promise<GameDraft> {
   const res = await fetchJson<BackendDraftResponse>("/api/v1/draft");
+  return matchFullToGameDraft(res);
+}
+
+export async function fetchDailyDraft(): Promise<GameDraft> {
+  const res = await fetchJson<BackendDraftResponse>("/api/v1/draft/daily");
   return matchFullToGameDraft(res);
 }
 

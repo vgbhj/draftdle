@@ -5,21 +5,21 @@
 import type { GameDraft, Hero, PickBanSlot } from '../types/api';
 
 export const MOCK_HEROES: Hero[] = [
-  { id: 1, name: 'Anti-Mage', attribute: 'agi' },
-  { id: 2, name: 'Axe', attribute: 'str' },
-  { id: 3, name: 'Crystal Maiden', attribute: 'int' },
-  { id: 4, name: 'Invoker', attribute: 'int' },
-  { id: 5, name: 'Pudge', attribute: 'str' },
-  { id: 6, name: 'Earthshaker', attribute: 'str' },
-  { id: 7, name: 'Storm Spirit', attribute: 'int' },
-  { id: 8, name: 'Lina', attribute: 'int' },
-  { id: 9, name: 'Phantom Assassin', attribute: 'agi' },
-  { id: 10, name: 'Juggernaut', attribute: 'agi' },
-  { id: 11, name: 'Ogre Magi', attribute: 'str' },
-  { id: 12, name: 'Shadow Fiend', attribute: 'agi' },
-  { id: 13, name: 'Tiny', attribute: 'str' },
-  { id: 14, name: 'Windranger', attribute: 'universal' },
-  { id: 15, name: 'Zeus', attribute: 'int' },
+  { id: 1, name: 'Anti-Mage', attribute: 'agi', attackType: 'melee' },
+  { id: 2, name: 'Axe', attribute: 'str', attackType: 'melee' },
+  { id: 3, name: 'Crystal Maiden', attribute: 'int', attackType: 'ranged' },
+  { id: 4, name: 'Invoker', attribute: 'int', attackType: 'ranged' },
+  { id: 5, name: 'Pudge', attribute: 'str', attackType: 'melee' },
+  { id: 6, name: 'Earthshaker', attribute: 'str', attackType: 'melee' },
+  { id: 7, name: 'Storm Spirit', attribute: 'int', attackType: 'ranged' },
+  { id: 8, name: 'Lina', attribute: 'int', attackType: 'ranged' },
+  { id: 9, name: 'Phantom Assassin', attribute: 'agi', attackType: 'melee' },
+  { id: 10, name: 'Juggernaut', attribute: 'agi', attackType: 'melee' },
+  { id: 11, name: 'Ogre Magi', attribute: 'str', attackType: 'melee' },
+  { id: 12, name: 'Shadow Fiend', attribute: 'agi', attackType: 'ranged' },
+  { id: 13, name: 'Tiny', attribute: 'str', attackType: 'melee' },
+  { id: 14, name: 'Windranger', attribute: 'universal', attackType: 'ranged' },
+  { id: 15, name: 'Zeus', attribute: 'int', attackType: 'ranged' },
 ];
 
 const MOCK_PICKS_BANS: PickBanSlot[] = [

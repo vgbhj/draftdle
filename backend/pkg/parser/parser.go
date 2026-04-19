@@ -70,6 +70,13 @@ type PicksBan struct {
 	Order  int  `json:"order"`
 }
 
+type Player struct {
+	HeroID      int    `json:"hero_id"`
+	Name        string `json:"name"`
+	Personaname string `json:"personaname"`
+	TeamNumber  int    `json:"team_number"`
+}
+
 type Match struct {
 	MatchID       int64      `json:"match_id"`
 	LeagueID      int        `json:"leagueid"`
@@ -79,6 +86,7 @@ type Match struct {
 	RadiantTeam   *Team      `json:"radiant_team"`
 	DireTeam      *Team      `json:"dire_team"`
 	PicksBan      []PicksBan `json:"picks_bans"`
+	Players       []Player   `json:"players"`
 }
 
 type Team struct {
@@ -106,8 +114,8 @@ func tierToInt(tier string) int {
 	}
 }
 
-func FetchLeagueIDs() ([]int, error) {
-	req, err := http.NewRequest("GET", "https://www.datdota.com/api/leagues", nil)
+func FetchLeagueIDs(ctx context.Context) ([]int, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://www.datdota.com/api/leagues", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -142,9 +150,9 @@ func FetchLeagueIDs() ([]int, error) {
 	return leagueIDs, nil
 }
 
-func FetchLeague(leagueID int) (LeagueDB, error) {
+func FetchLeague(ctx context.Context, leagueID int) (LeagueDB, error) {
 	url := fmt.Sprintf("https://api.opendota.com/api/leagues/%d", leagueID)
-	resp, err := client.Get(url)
+	resp, err := client.Get(ctx, url)
 	if err != nil {
 		return LeagueDB{}, err
 	}
@@ -161,7 +169,7 @@ func FetchLeague(leagueID int) (LeagueDB, error) {
 		return LeagueDB{}, err
 	}
 
-	match, err := FetchFirstLeagueMatch(league.LeagueID)
+	match, err := FetchFirstLeagueMatch(ctx, league.LeagueID)
 	patchID := 0
 	if err == nil && match != nil {
 		patchID = match.Patch
@@ -175,8 +183,8 @@ func FetchLeague(leagueID int) (LeagueDB, error) {
 	}, nil
 }
 
-func FetchLeaguesDatdota() ([]League, error) {
-	req, err := http.NewRequest("GET", "https://www.datdota.com/api/leagues", nil)
+func FetchLeaguesDatdota(ctx context.Context) ([]League, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://www.datdota.com/api/leagues", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -198,20 +206,17 @@ func FetchLeaguesDatdota() ([]League, error) {
 		return nil, fmt.Errorf("API error: status %d", resp.StatusCode)
 	}
 
-	var leagues []League
 	var response LeagueResponse
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, err
 	}
 
-	leagues = response.Data
-
-	return leagues, nil
+	return response.Data, nil
 }
 
-func FetchLeagues() ([]LeagueDB, error) {
-	leagues, err := FetchLeaguesDatdota()
+func FetchLeagues(ctx context.Context) ([]LeagueDB, error) {
+	leagues, err := FetchLeaguesDatdota(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +226,6 @@ func FetchLeagues() ([]LeagueDB, error) {
 
 	semaphore := make(chan struct{}, 10)
 
-	// for inx, league := range leagues {
 	for i := 0; i < len(leagues); i++ {
 		tierCode := leagues[i].Tier.ID
 		if tierCode < 3 {
@@ -230,11 +234,15 @@ func FetchLeagues() ([]LeagueDB, error) {
 			go func(l League, tc int) {
 				defer wg.Done()
 
-				semaphore <- struct{}{}
+				select {
+				case <-ctx.Done():
+					return
+				case semaphore <- struct{}{}:
+				}
 
 				defer func() { <-semaphore }()
 
-				match, err := FetchFirstLeagueMatch(l.LeagueID)
+				match, err := FetchFirstLeagueMatch(ctx, l.LeagueID)
 				patchID := 0
 				if err == nil && match != nil {
 					patchID = match.Patch
@@ -263,8 +271,8 @@ func FetchLeagues() ([]LeagueDB, error) {
 	return filtered, nil
 }
 
-func FetchNewLeagues(db *sqlx.DB) ([]LeagueDB, error) {
-	leagues, err := FetchLeaguesDatdota()
+func FetchNewLeagues(ctx context.Context, db *sqlx.DB) ([]LeagueDB, error) {
+	leagues, err := FetchLeaguesDatdota(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -279,26 +287,24 @@ func FetchNewLeagues(db *sqlx.DB) ([]LeagueDB, error) {
 
 	var newLeagues []LeagueDB
 	for _, league := range leagues {
+		select {
+		case <-ctx.Done():
+			return newLeagues, ctx.Err()
+		default:
+		}
 		if !existingMap[league.LeagueID] {
 			if league.Tier.ID < 3 {
 				if league.LeagueID < 0 {
 					continue
 				}
 				log.Println(league.LeagueID)
-				newLeague, err := FetchLeague(league.LeagueID)
+				newLeague, err := FetchLeague(ctx, league.LeagueID)
 				if err != nil {
 					return nil, err
 				}
 				newLeagues = append(newLeagues, newLeague)
 			}
 		}
-		// if len(newLeagues) > 10 {
-		// 	break
-		// }
-	}
-
-	if len(newLeagues) == 0 {
-		return newLeagues, nil
 	}
 
 	return newLeagues, nil
@@ -316,7 +322,7 @@ func resolvedMatchTeamIDs(m *Match) (radiant, dire int) {
 	return radiant, dire
 }
 
-func UpdateMatchesTeamIDs(db *sqlx.DB, onlyMissing bool) error {
+func UpdateMatchesTeamIDs(ctx context.Context, db *sqlx.DB, onlyMissing bool) error {
 	var ids []int64
 	q := `SELECT id FROM matches`
 	if onlyMissing {
@@ -350,8 +356,13 @@ func UpdateMatchesTeamIDs(db *sqlx.DB, onlyMissing bool) error {
 		go func() {
 			defer wg.Done()
 			for i := range jobs {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
 				id := ids[i]
-				m, err := FetchMatches(id)
+				m, err := FetchMatches(ctx, id)
 				log.Println(i, len(jobs))
 				if err != nil {
 					log.Printf("UpdateMatchesTeamIDs: match %d: %v", id, err)
@@ -428,9 +439,9 @@ func UpdateMatchesTeamIDs(db *sqlx.DB, onlyMissing bool) error {
 	return nil
 }
 
-func FetchMatches(matchID int64) (*Match, error) {
+func FetchMatches(ctx context.Context, matchID int64) (*Match, error) {
 	url := fmt.Sprintf("https://api.opendota.com/api/matches/%d", matchID)
-	resp, err := client.Get(url)
+	resp, err := client.Get(ctx, url)
 	if err != nil {
 		return nil, err
 	}
@@ -448,9 +459,9 @@ func FetchMatches(matchID int64) (*Match, error) {
 	return &match, nil
 }
 
-func FetchLeagueMatches(leagueID int) ([]Match, error) {
+func FetchLeagueMatches(ctx context.Context, leagueID int) ([]Match, error) {
 	url := fmt.Sprintf("https://api.opendota.com/api/leagues/%d/matches", leagueID)
-	resp, err := client.Get(url)
+	resp, err := client.Get(ctx, url)
 	if err != nil {
 		return nil, err
 	}
@@ -475,10 +486,15 @@ func FetchLeagueMatches(leagueID int) ([]Match, error) {
 		wg.Add(1)
 		go func(matchID int64) {
 			defer wg.Done()
-			semaphore <- struct{}{}
+
+			select {
+			case <-ctx.Done():
+				return
+			case semaphore <- struct{}{}:
+			}
 			defer func() { <-semaphore }()
 
-			tmpMatch, err := FetchMatches(matchID)
+			tmpMatch, err := FetchMatches(ctx, matchID)
 			if err != nil {
 				fmt.Printf("Error fetching match %d: %v\n", matchID, err)
 				return
@@ -500,9 +516,9 @@ func FetchLeagueMatches(leagueID int) ([]Match, error) {
 	return trueMatches, nil
 }
 
-func FetchFirstLeagueMatch(leagueID int) (*Match, error) {
+func FetchFirstLeagueMatch(ctx context.Context, leagueID int) (*Match, error) {
 	url := fmt.Sprintf("https://api.opendota.com/api/leagues/%d/matches", leagueID)
-	resp, err := client.Get(url)
+	resp, err := client.Get(ctx, url)
 	if err != nil {
 		return nil, err
 	}
@@ -525,7 +541,7 @@ func FetchFirstLeagueMatch(leagueID int) (*Match, error) {
 		return nil, fmt.Errorf("no matches found for league %d", leagueID)
 	}
 
-	tmpMatch, err := FetchMatches(matches[0].MatchID)
+	tmpMatch, err := FetchMatches(ctx, matches[0].MatchID)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching match %d: %v", matches[0].MatchID, err)
 	}
@@ -533,21 +549,25 @@ func FetchFirstLeagueMatch(leagueID int) (*Match, error) {
 	return tmpMatch, nil
 }
 
-func FetchAllLeaguesMatches(leagues []LeagueDB) ([]Match, error) {
+func FetchAllLeaguesMatches(ctx context.Context, leagues []LeagueDB) ([]Match, error) {
 	results := make(chan []Match, len(leagues))
 	var wg sync.WaitGroup
 
 	semaphore := make(chan struct{}, 3)
 
-	// for _, league := range leagues {
 	for i := 0; i < len(leagues); i++ {
 		wg.Add(1)
 		go func(league LeagueDB) {
 			defer wg.Done()
-			semaphore <- struct{}{}
+
+			select {
+			case <-ctx.Done():
+				return
+			case semaphore <- struct{}{}:
+			}
 			defer func() { <-semaphore }()
 
-			matches, err := FetchLeagueMatches(league.LeagueID)
+			matches, err := FetchLeagueMatches(ctx, league.LeagueID)
 			if err != nil {
 				fmt.Printf("Error fetching matches for league %d: %v\n", league.LeagueID, err)
 				results <- []Match{}
@@ -569,8 +589,8 @@ func FetchAllLeaguesMatches(leagues []LeagueDB) ([]Match, error) {
 	return allMatches, nil
 }
 
-func FetchPatches() ([]Patch, error) {
-	resp, err := client.Get("https://api.opendota.com/api/constants/patch")
+func FetchPatches(ctx context.Context) ([]Patch, error) {
+	resp, err := client.Get(ctx, "https://api.opendota.com/api/constants/patch")
 	if err != nil {
 		return nil, err
 	}
@@ -806,10 +826,126 @@ func SaveMatches(db *sqlx.DB, matches []Match) error {
 		if err := SavePicksBans(m.PicksBan, m.MatchID, tx); err != nil {
 			log.Printf("Error saving picks_bans for match %d: %v\n", m.MatchID, err)
 		}
+
+		if err := SavePlayers(m.Players, m.MatchID, tx); err != nil {
+			log.Printf("Error saving players for match %d: %v\n", m.MatchID, err)
+		}
 	}
 
 	err = tx.Commit()
 	return err
+}
+
+func SavePlayers(players []Player, matchID int64, tx *sqlx.Tx) error {
+	if len(players) == 0 {
+		return nil
+	}
+
+	stmt, err := tx.Preparex(`INSERT OR IGNORE INTO players (match_id, hero_id, player_name, team) VALUES (?, ?, ?, ?)`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, p := range players {
+		name := p.Name
+		if name == "" {
+			name = p.Personaname
+		}
+		if name == "" {
+			name = "Unknown"
+		}
+		if _, err := stmt.Exec(matchID, p.HeroID, name, p.TeamNumber); err != nil {
+			log.Printf("Error saving player (hero_id=%d) for match %d: %v", p.HeroID, matchID, err)
+		}
+	}
+	return nil
+}
+
+type OpenDotaPlayerFetcher struct{}
+
+func NewPlayerFetcher() *OpenDotaPlayerFetcher {
+	return &OpenDotaPlayerFetcher{}
+}
+
+func (f *OpenDotaPlayerFetcher) FetchPlayers(ctx context.Context, matchID int64) (map[int]string, error) {
+	match, err := FetchMatches(ctx, matchID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch match %d from OpenDota: %w", matchID, err)
+	}
+
+	result := make(map[int]string, len(match.Players))
+	for _, p := range match.Players {
+		name := p.Name
+		if name == "" {
+			name = p.Personaname
+		}
+		if name == "" {
+			name = "Unknown"
+		}
+		result[p.HeroID] = name
+	}
+
+	return result, nil
+}
+
+func FetchAndSavePlayers(ctx context.Context, db *sqlx.DB, matchID int64) (map[int]string, error) {
+	fetcher := NewPlayerFetcher()
+	result, err := fetcher.FetchPlayers(ctx, matchID)
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := db.Beginx()
+	if err != nil {
+		return result, err
+	}
+	if err := SavePlayers(matchPlayersFromMap(result), matchID, tx); err != nil {
+		tx.Rollback()
+		return result, err
+	}
+	tx.Commit()
+
+	return result, nil
+}
+
+func matchPlayersFromMap(m map[int]string) []Player {
+	players := make([]Player, 0, len(m))
+	for heroID, name := range m {
+		players = append(players, Player{HeroID: heroID, Name: name})
+	}
+	return players
+}
+
+func BackfillPlayers(ctx context.Context, db *sqlx.DB) error {
+	var matchIDs []int64
+	err := sqlx.Select(db, &matchIDs, `
+		SELECT m.id FROM matches m
+		LEFT JOIN players p ON m.id = p.match_id
+		WHERE p.id IS NULL
+	`)
+	if err != nil {
+		return fmt.Errorf("query matches without players: %w", err)
+	}
+
+	log.Printf("Backfill: found %d matches without players", len(matchIDs))
+
+	for i, id := range matchIDs {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+		_, err := FetchAndSavePlayers(ctx, db, id)
+		if err != nil {
+			log.Printf("Backfill: error for match %d: %v", id, err)
+			continue
+		}
+		log.Printf("Backfill: %d/%d — match %d done", i+1, len(matchIDs), id)
+	}
+
+	log.Println("Backfill complete")
+	return nil
 }
 func InitConfig(enableApi bool, r rate.Limit, burst int) {
 	if enableApi {
@@ -846,8 +982,8 @@ func NewDotaClient(enableApi bool, apiKey string, r rate.Limit, burst int) *Dota
 	}
 }
 
-func (c *DotaClient) Get(urlStr string) (*http.Response, error) {
-	if err := c.limiter.Wait(context.Background()); err != nil {
+func (c *DotaClient) Get(ctx context.Context, urlStr string) (*http.Response, error) {
+	if err := c.limiter.Wait(ctx); err != nil {
 		return nil, err
 	}
 
@@ -863,7 +999,10 @@ func (c *DotaClient) Get(urlStr string) (*http.Response, error) {
 	}
 	u.RawQuery = q.Encode()
 
-	// log.Printf("GET %s", u.String())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 
-	return c.http.Get(u.String())
+	return c.http.Do(req)
 }

@@ -42,9 +42,10 @@ type Match struct {
 }
 
 type MatchFull struct {
-    MatchID     int64   `json:"match_id"`
-    Slots       []Draft `json:"slots"`
-    RadiantTeam *Team   `json:"radiant_team,omitempty"`
-    DireTeam    *Team   `json:"dire_team,omitempty"`
-    League      *League `json:"league,omitempty"`
+    MatchID     int64          `json:"match_id"`
+    Slots       []Draft        `json:"slots"`
+    RadiantTeam *Team          `json:"radiant_team,omitempty"`
+    DireTeam    *Team          `json:"dire_team,omitempty"`
+    League      *League        `json:"league,omitempty"`
+    Players     map[int]string `json:"players,omitempty"`
 }

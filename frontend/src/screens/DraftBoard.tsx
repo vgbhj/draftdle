@@ -1,10 +1,14 @@
 import type { GameDraft, Hero, PickBanSlot } from "../types/api";
 import { DraftSlot } from "../components/DraftSlot";
+import { HintBar, type HintData } from "../components/HintBar";
 
 interface DraftBoardProps {
   game: GameDraft;
   heroes: Hero[];
   onGuess: () => void;
+  hints?: HintData;
+  wrongGuesses?: number;
+  maxGuesses?: number;
 }
 
 function buildHeroesMap(heroes: Hero[]): Map<number, Hero> {
@@ -13,7 +17,7 @@ function buildHeroesMap(heroes: Hero[]): Map<number, Hero> {
   return map;
 }
 
-export function DraftBoard({ game, heroes, onGuess }: DraftBoardProps) {
+export function DraftBoard({ game, heroes, onGuess, hints, wrongGuesses, maxGuesses }: DraftBoardProps) {
   const heroesMap = buildHeroesMap(heroes);
   const picksBans = game.picksBans ?? [];
 
@@ -24,37 +28,43 @@ export function DraftBoard({ game, heroes, onGuess }: DraftBoardProps) {
   const renderSingleSlot = (slot: PickBanSlot, side: "radiant" | "dire") => {
     const hero = heroesMap.get(slot.hero_id) ?? null;
     const isBan = !slot.is_pick;
+    const showHints = !!slot.isSecret && hints && wrongGuesses != null && wrongGuesses > 0;
 
     return (
-      <div key={slot.order} className="flex items-center gap-1 flex-shrink-0">
-        {side === "radiant" ? (
-          <>
-            <DraftSlot
-              hero={slot.isSecret ? null : hero}
-              isSecret={!!slot.isSecret}
-              isBan={isBan}
-              team="radiant"
-              onGuess={slot.isSecret ? onGuess : undefined}
-            />
-            <span className="h-px bg-white/20 flex-1 min-w-[10px]" />
-            <span className="w-5 text-center text-[10px] font-bold text-white/40">
-              {slot.order + 1}
-            </span>
-          </>
-        ) : (
-          <>
-            <span className="w-5 text-center text-[10px] font-bold text-white/40">
-              {slot.order + 1}
-            </span>
-            <span className="h-px bg-white/20 flex-1 min-w-[10px]" />
-            <DraftSlot
-              hero={slot.isSecret ? null : hero}
-              isSecret={!!slot.isSecret}
-              isBan={isBan}
-              team="dire"
-              onGuess={slot.isSecret ? onGuess : undefined}
-            />
-          </>
+      <div key={slot.order} className="flex-shrink-0">
+        <div className="flex items-center gap-1">
+          {side === "radiant" ? (
+            <>
+              <DraftSlot
+                hero={slot.isSecret ? null : hero}
+                isSecret={!!slot.isSecret}
+                isBan={isBan}
+                team="radiant"
+                onGuess={slot.isSecret ? onGuess : undefined}
+              />
+              <span className="h-px bg-white/20 flex-1 min-w-[10px]" />
+              <span className="w-5 text-center text-[10px] font-bold text-white/40">
+                {slot.order + 1}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="w-5 text-center text-[10px] font-bold text-white/40">
+                {slot.order + 1}
+              </span>
+              <span className="h-px bg-white/20 flex-1 min-w-[10px]" />
+              <DraftSlot
+                hero={slot.isSecret ? null : hero}
+                isSecret={!!slot.isSecret}
+                isBan={isBan}
+                team="dire"
+                onGuess={slot.isSecret ? onGuess : undefined}
+              />
+            </>
+          )}
+        </div>
+        {showHints && (
+          <HintBar hints={hints} wrongGuesses={wrongGuesses} maxGuesses={maxGuesses ?? 5} />
         )}
       </div>
     );
