@@ -1,0 +1,18 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: draftdle
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+    volumes:
+      - ./backend/data:/app/data
+    networks:
+      - draftdle-network
+
+networks:
+  draftdle-network:
+    driver: bridge

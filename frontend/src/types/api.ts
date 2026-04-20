@@ -1,0 +1,104 @@
+/**
+ * Типы под контракт API.
+ */
+
+export type HeroAttribute = "str" | "agi" | "int" | "universal";
+export type AttackType = "melee" | "ranged";
+
+export interface Hero {
+  id: number;
+  name: string;
+  name_ru?: string;
+  attribute: HeroAttribute;
+  attackType: AttackType;
+  image?: string;
+  /** Internal name for CDN (e.g. antimage, axe). */
+  nameInternal?: string;
+}
+
+/** Ответ бэкенда: массив слотов драфта одного матча. */
+export interface BackendDraftSlot {
+  id: number;
+  match_id: number;
+  is_pick: boolean;
+  hero_id: number;
+  team: number;
+  order: number;
+}
+
+export interface BackendTeamPayload {
+  team_id: number;
+  name: string;
+  tag: string;
+  logo_url: string;
+}
+
+export interface BackendLeaguePayload {
+  id: number;
+  name: string;
+  tier: number;
+  patch_id: number;
+}
+
+/** GET /api/v1/draft — полный матч. */
+export interface BackendDraftResponse {
+  match_id: number;
+  slots: BackendDraftSlot[];
+  radiant_team?: BackendTeamPayload;
+  dire_team?: BackendTeamPayload;
+  league?: BackendLeaguePayload;
+  players?: Record<string, string>;
+}
+
+export type TeamKind = "radiant" | "dire";
+
+export interface SecretPick {
+  team: TeamKind;
+  slotIndex: number;
+  heroId: number;
+}
+
+export interface DraftSlot {
+  heroId: number | null;
+  isBan: boolean;
+  slotIndex: number;
+}
+
+export interface TeamDraft {
+  picks: (number | null)[];
+  bans: (number | null)[];
+}
+
+/** Один слот из picks_bans: порядок хода, команда, пик/бан, герой. */
+export interface PickBanSlot {
+  order: number;
+  team: number; // 0 = Radiant, 1 = Dire
+  is_pick: boolean;
+  hero_id: number;
+  isSecret?: boolean;
+}
+
+export interface GameDraft {
+  matchId?: number;
+  radiant: TeamDraft;
+  dire: TeamDraft;
+  secretPick: SecretPick;
+  picksBans?: PickBanSlot[];
+  radiantTeam?: TeamInfo;
+  direTeam?: TeamInfo;
+  league?: LeagueInfo;
+  players?: Record<string, string>;
+}
+
+export interface TeamInfo {
+  teamId: number;
+  name: string;
+  tag: string;
+  logoUrl: string;
+}
+
+export interface LeagueInfo {
+  leagueId: number;
+  name: string;
+  tier: string;
+}
