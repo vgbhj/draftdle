@@ -1,5 +1,6 @@
 services:
   app:
+    image: draftdle
     build:
       context: .
       dockerfile: Dockerfile

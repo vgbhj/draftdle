@@ -4,18 +4,42 @@ on:
   push:
     branches: [main]
 
+env:
+  IMAGE_NAME: draftdle
+
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to server
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t $IMAGE_NAME .
+
+      - name: Save image as tarball
+        run: docker save $IMAGE_NAME | gzip > image.tar.gz
+
+      - name: Copy image to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: image.tar.gz
+          target: /tmp
+
+      - name: Deploy on server
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          command_timeout: 2m
           script: |
+            docker load < /tmp/image.tar.gz
             cd /root/draftdle
             git pull origin main
-            docker-compose up --build -d
+            docker-compose down
+            docker-compose up -d
             docker image prune -f
+            rm /tmp/image.tar.gz
