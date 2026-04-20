@@ -196,6 +196,23 @@ func (r *DraftRepository) GetPlayersByMatchID(matchID int64) (map[int]string, er
 	return m, nil
 }
 
+func (r *DraftRepository) SaveTeamForMatch(matchID int64, team *models.Team, side string) error {
+	if team == nil || team.TeamID == 0 {
+		return nil
+	}
+	_, err := r.db.Exec(`INSERT OR IGNORE INTO teams (id, name, tag, logo_url) VALUES (?, ?, ?, ?)`,
+		team.TeamID, team.Name, team.Tag, team.LogoURL)
+	if err != nil {
+		return err
+	}
+	col := "radiant_team_id"
+	if side == "dire" {
+		col = "dire_team_id"
+	}
+	_, err = r.db.Exec(`UPDATE matches SET `+col+` = ? WHERE id = ?`, team.TeamID, matchID)
+	return err
+}
+
 func (r *DraftRepository) SavePlayersForMatch(matchID int64, players map[int]string) error {
 	tx, err := r.db.Beginx()
 	if err != nil {

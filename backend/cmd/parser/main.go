@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	parser.InitConfig(false, rate.Every(time.Second), 1)
+	parser.InitConfig(false, rate.Every(1200*time.Millisecond), 1)
 	// parser.InitConfig(true, rate.Every(time.Second/25), 50)
 	// parser.InitConfig(true, 0, 0)
 
