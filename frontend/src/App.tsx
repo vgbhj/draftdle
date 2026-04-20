@@ -86,6 +86,24 @@ export default function App() {
   const handleGuessClick = useCallback(() => setPickerOpen(true), []);
   const handlePickerClose = useCallback(() => setPickerOpen(false), []);
 
+  const hints = useMemo<HintData>(() => {
+    if (!game || wrongGuesses === 0) return {};
+    const secretHero = heroes.find((h) => h.id === game.secretPick.heroId);
+    const h: HintData = {};
+    if (wrongGuesses >= 1 && secretHero) h.attribute = secretHero.attribute;
+    if (wrongGuesses >= 2 && secretHero) h.attackType = secretHero.attackType;
+    if (wrongGuesses >= 3) {
+      const team =
+        game.secretPick.team === "radiant" ? game.radiantTeam : game.direTeam;
+      h.teamName = team?.name || team?.tag || "Unknown";
+    }
+    if (wrongGuesses >= 4) {
+      const playerName = game.players?.[String(game.secretPick.heroId)];
+      h.playerName = playerName || "Unknown";
+    }
+    return h;
+  }, [game, heroes, wrongGuesses]);
+
   const unavailableHeroIds = useMemo(() => {
     const s = new Set<number>();
     if (!game?.picksBans) return s;
@@ -96,8 +114,15 @@ export default function App() {
     for (const id of guessedHeroIds) {
       s.add(id);
     }
+    if (hints.attribute || hints.attackType) {
+      for (const h of heroes) {
+        if (s.has(h.id)) continue;
+        if (hints.attribute && h.attribute !== hints.attribute) s.add(h.id);
+        else if (hints.attackType && h.attackType !== hints.attackType) s.add(h.id);
+      }
+    }
     return s;
-  }, [game, guessedHeroIds]);
+  }, [game, guessedHeroIds, hints, heroes]);
 
   const handleHeroSelect = useCallback(
     (hero: Hero) => {
@@ -110,41 +135,15 @@ export default function App() {
         return;
       }
 
-      // Daily mode: progressive hints
-      if (mode === "daily") {
-        const newWrong = wrongGuesses + 1;
-        setWrongGuesses(newWrong);
-        setGuessedHeroIds((prev) => [...prev, hero.id]);
-        if (newWrong >= MAX_GUESSES - 1) {
-          // Used all attempts
-          setResult("wrong");
-        }
-      } else {
-        // Random mode: immediate result
+      const newWrong = wrongGuesses + 1;
+      setWrongGuesses(newWrong);
+      setGuessedHeroIds((prev) => [...prev, hero.id]);
+      if (newWrong >= MAX_GUESSES) {
         setResult("wrong");
       }
     },
-    [game, mode, wrongGuesses],
+    [game, wrongGuesses],
   );
-
-  // Compute hints for daily mode
-  const hints = useMemo<HintData>(() => {
-    if (!game || mode !== "daily" || wrongGuesses === 0) return {};
-    const secretHero = heroes.find((h) => h.id === game.secretPick.heroId);
-    const h: HintData = {};
-    if (wrongGuesses >= 1 && secretHero) h.attribute = secretHero.attribute;
-    if (wrongGuesses >= 2 && secretHero) h.attackType = secretHero.attackType;
-    if (wrongGuesses >= 3) {
-      const team =
-        game.secretPick.team === "radiant" ? game.radiantTeam : game.direTeam;
-      h.teamName = team?.tag || team?.name || "Unknown";
-    }
-    if (wrongGuesses >= 4) {
-      const playerName = game.players?.[String(game.secretPick.heroId)];
-      h.playerName = playerName || "Unknown";
-    }
-    return h;
-  }, [game, heroes, mode, wrongGuesses]);
 
   const isDaily = mode === "daily";
 
@@ -197,9 +196,9 @@ export default function App() {
           game={game}
           heroes={heroes}
           onGuess={handleGuessClick}
-          hints={isDaily ? hints : undefined}
-          wrongGuesses={isDaily ? wrongGuesses : undefined}
-          maxGuesses={isDaily ? MAX_GUESSES : undefined}
+          hints={hints}
+          wrongGuesses={wrongGuesses}
+          maxGuesses={MAX_GUESSES}
         />
       </div>
       {pickerOpen && (
@@ -226,13 +225,11 @@ export default function App() {
                     >
                       {result === "correct" ? "CONGRATS!" : "WRONG!"}
                     </h2>
-                    {isDaily && (
-                      <p className="text-white/50 text-sm">
-                        {result === "correct"
-                          ? `Guessed in ${wrongGuesses + 1} attempt${wrongGuesses > 0 ? "s" : ""}`
-                          : `Used all ${MAX_GUESSES} attempts`}
-                      </p>
-                    )}
+                    <p className="text-white/50 text-sm">
+                      {result === "correct"
+                        ? `Guessed in ${wrongGuesses + 1} attempt${wrongGuesses > 0 ? "s" : ""}`
+                        : `Used all ${MAX_GUESSES} attempts`}
+                    </p>
                   </div>
 
                   {/* Информация о лиге и командах */}

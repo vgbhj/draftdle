@@ -42,6 +42,7 @@ func (u *DraftUC) GetRandomDraft() (*models.MatchFull, error) {
 		return nil, err
 	}
 
+	u.enrichWithTeams(matchFull)
 	u.enrichWithPlayers(matchFull)
 	return matchFull, nil
 }
@@ -67,6 +68,7 @@ func (u *DraftUC) GetDailyDraft() (*models.MatchFull, error) {
 		return nil, err
 	}
 
+	u.enrichWithTeams(full)
 	u.enrichWithPlayers(full)
 
 	u.daily.mu.Lock()
@@ -75,6 +77,33 @@ func (u *DraftUC) GetDailyDraft() (*models.MatchFull, error) {
 	u.daily.mu.Unlock()
 
 	return full, nil
+}
+
+func (u *DraftUC) enrichWithTeams(full *models.MatchFull) {
+	hasRadiant := full.RadiantTeam != nil && full.RadiantTeam.Name != ""
+	hasDire := full.DireTeam != nil && full.DireTeam.Name != ""
+	if hasRadiant && hasDire {
+		return
+	}
+
+	radiant, dire, err := u.fetcher.FetchMatchTeams(context.Background(), full.MatchID)
+	if err != nil {
+		log.Printf("Error fetching teams for match %d: %v", full.MatchID, err)
+		return
+	}
+
+	if !hasRadiant && radiant != nil {
+		full.RadiantTeam = radiant
+		if err := u.repo.SaveTeamForMatch(full.MatchID, radiant, "radiant"); err != nil {
+			log.Printf("Error saving radiant team for match %d: %v", full.MatchID, err)
+		}
+	}
+	if !hasDire && dire != nil {
+		full.DireTeam = dire
+		if err := u.repo.SaveTeamForMatch(full.MatchID, dire, "dire"); err != nil {
+			log.Printf("Error saving dire team for match %d: %v", full.MatchID, err)
+		}
+	}
 }
 
 func (u *DraftUC) enrichWithPlayers(full *models.MatchFull) {

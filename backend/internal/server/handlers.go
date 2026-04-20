@@ -1,6 +1,8 @@
 package server
 
 import (
+	"os"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/vgbhj/draftdle/internal/draft/repository"
@@ -23,11 +25,21 @@ func (s *Server) MapHandlers(e *echo.Echo) error {
 	draftHttp.MapRoutes(draft, draftHandler)
 
     e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
-        Root:   "frontend/dist", 
+        Root:   staticRoot(),
         Index:  "index.html",
         HTML5:  true,           
         Browse: false,
     }))
 
 	return nil
+}
+
+func staticRoot() string {
+	if v := os.Getenv("STATIC_ROOT"); v != "" {
+		return v
+	}
+	if _, err := os.Stat("frontend/dist"); err == nil {
+		return "frontend/dist"
+	}
+	return "../frontend/dist"
 }

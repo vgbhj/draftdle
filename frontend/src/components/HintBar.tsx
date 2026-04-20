@@ -37,22 +37,22 @@ export function HintBar({ hints, wrongGuesses, maxGuesses }: HintBarProps) {
           <span
             className={`px-2 py-0.5 rounded text-xs font-bold border ${ATTR_COLORS[hints.attribute]}`}
           >
-            {ATTR_LABELS[hints.attribute]}
+            Attr: {ATTR_LABELS[hints.attribute]}
           </span>
         )}
         {hints.attackType && (
           <span className="px-2 py-0.5 rounded text-xs font-bold border bg-orange-500/30 border-orange-400/40 text-orange-300">
-            {hints.attackType === "melee" ? "MELEE" : "RANGED"}
+            Attack: {hints.attackType === "melee" ? "MELEE" : "RANGED"}
           </span>
         )}
         {hints.teamName && (
           <span className="px-2 py-0.5 rounded text-xs font-bold border bg-purple-500/30 border-purple-400/40 text-purple-300">
-            {hints.teamName}
+            Team: {hints.teamName}
           </span>
         )}
         {hints.playerName && (
           <span className="px-2 py-0.5 rounded text-xs font-bold border bg-cyan-500/30 border-cyan-400/40 text-cyan-300">
-            {hints.playerName}
+            Player: {hints.playerName}
           </span>
         )}
       </div>

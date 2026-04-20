@@ -19,6 +19,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	"github.com/vgbhj/draftdle/internal/models"
 	_ "modernc.org/sqlite"
 )
 
@@ -115,7 +116,7 @@ func tierToInt(tier string) int {
 }
 
 func FetchLeagueIDs(ctx context.Context) ([]int, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://www.datdota.com/api/leagues", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.datdota.com/api/leagues", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +185,7 @@ func FetchLeague(ctx context.Context, leagueID int) (LeagueDB, error) {
 }
 
 func FetchLeaguesDatdota(ctx context.Context) ([]League, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://www.datdota.com/api/leagues", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.datdota.com/api/leagues", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -887,6 +888,30 @@ func (f *OpenDotaPlayerFetcher) FetchPlayers(ctx context.Context, matchID int64)
 	}
 
 	return result, nil
+}
+
+func (f *OpenDotaPlayerFetcher) FetchMatchTeams(ctx context.Context, matchID int64) (radiant, dire *models.Team, err error) {
+	match, err := FetchMatches(ctx, matchID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("fetch match %d from OpenDota: %w", matchID, err)
+	}
+	if match.RadiantTeam != nil && match.RadiantTeam.TeamID != 0 {
+		radiant = &models.Team{
+			TeamID:  match.RadiantTeam.TeamID,
+			Name:    match.RadiantTeam.Name,
+			Tag:     match.RadiantTeam.Tag,
+			LogoURL: match.RadiantTeam.LogoURL,
+		}
+	}
+	if match.DireTeam != nil && match.DireTeam.TeamID != 0 {
+		dire = &models.Team{
+			TeamID:  match.DireTeam.TeamID,
+			Name:    match.DireTeam.Name,
+			Tag:     match.DireTeam.Tag,
+			LogoURL: match.DireTeam.LogoURL,
+		}
+	}
+	return radiant, dire, nil
 }
 
 func FetchAndSavePlayers(ctx context.Context, db *sqlx.DB, matchID int64) (map[int]string, error) {

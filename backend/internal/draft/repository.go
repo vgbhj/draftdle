@@ -13,4 +13,5 @@ type Repository interface {
 	SaveDailyMatchID(date string, matchID int64) error
 	GetPlayersByMatchID(matchID int64) (map[int]string, error)
 	SavePlayersForMatch(matchID int64, players map[int]string) error
+	SaveTeamForMatch(matchID int64, team *models.Team, side string) error
 }

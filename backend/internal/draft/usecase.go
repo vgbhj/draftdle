@@ -13,4 +13,5 @@ type DraftUC interface {
 
 type PlayerFetcher interface {
 	FetchPlayers(ctx context.Context, matchID int64) (map[int]string, error)
+	FetchMatchTeams(ctx context.Context, matchID int64) (radiant, dire *models.Team, err error)
 }
