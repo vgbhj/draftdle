@@ -331,6 +331,13 @@ export default function App() {
                         NEXT
                       </button>
                     )}
+                    <button
+                      type="button"
+                      className="px-6 py-3 bg-white/5 hover:bg-white/15 border border-white/10 rounded-lg font-bold text-white/70 transition-all cursor-pointer"
+                      onClick={handleBack}
+                    >
+                      MENU
+                    </button>
                   </div>
                 </>
               );
