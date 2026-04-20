@@ -71,9 +71,9 @@ export function DraftBoard({ game, heroes, onGuess, hints, wrongGuesses, maxGues
   };
 
   return (
-    <main className="flex-1 min-h-0 flex flex-col p-1">
+    <main className="flex-1 min-h-0 flex flex-col p-1 overflow-y-auto scrollbar-hide">
       {/* Заголовки */}
-      <div className="grid grid-cols-2 gap-8 mb-2">
+      <div className="grid grid-cols-2 gap-8 mb-2 flex-shrink-0">
         <div className="text-center text-xs font-bold tracking-wider text-green-400/90">
           RADIANT
         </div>
@@ -83,14 +83,14 @@ export function DraftBoard({ game, heroes, onGuess, hints, wrongGuesses, maxGues
       </div>
 
       {/* Основной контейнер с двумя колонками */}
-      <div className="flex flex-1 min-h-0 gap-8">
+      <div className="flex flex-1 gap-8">
         {/* Колонка Radiant */}
-        <div className="flex-1 flex flex-col gap-1 overflow-hidden justify-between">
+        <div className="flex-1 flex flex-col gap-1 justify-between">
           {radiantSlots.map((slot) => renderSingleSlot(slot, "radiant"))}
         </div>
 
         {/* Колонка Dire */}
-        <div className="flex-1 flex flex-col gap-1 overflow-hidden justify-between">
+        <div className="flex-1 flex flex-col gap-1 justify-between">
           {direSlots.map((slot) => renderSingleSlot(slot, "dire"))}
         </div>
       </div>
