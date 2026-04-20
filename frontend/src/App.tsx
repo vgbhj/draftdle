@@ -150,7 +150,7 @@ export default function App() {
   // Menu screen
   if (mode === "menu") {
     return (
-      <div className="h-screen h-[100dvh] bg-gradient-to-br from-purple-950 via-slate-950 to-black flex flex-col items-center justify-start text-purple-100 overflow-hidden">
+      <div className="h-screen h-[100svh] bg-gradient-to-br from-purple-950 via-slate-950 to-black flex flex-col items-center justify-start text-purple-100 overflow-hidden">
         <div className="w-full max-w-md flex flex-col h-full overflow-hidden">
           <Header />
           <MainMenu onSelectMode={handleSelectMode} />
@@ -186,7 +186,7 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen h-[100dvh] bg-gradient-to-br from-purple-950 via-slate-950 to-black flex flex-col items-center justify-start text-purple-100 overflow-hidden">
+    <div className="h-screen h-[100svh] bg-gradient-to-br from-purple-950 via-slate-950 to-black flex flex-col items-center justify-start text-purple-100 overflow-hidden">
       <div className="w-full max-w-md flex flex-col h-full overflow-hidden">
         <Header
           onClose={handleBack}
