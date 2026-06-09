@@ -71,7 +71,7 @@ export function DraftBoard({ game, heroes, onGuess, hints, wrongGuesses, maxGues
   };
 
   return (
-    <main className="flex-1 min-h-0 flex flex-col p-1 overflow-y-auto scrollbar-hide pb-16">
+    <main className="flex-1 min-h-0 flex flex-col p-1 overflow-y-auto scrollbar-hide pb-18">
       {/* Заголовки */}
       <div className="grid grid-cols-2 gap-8 mb-2 flex-shrink-0">
         <div className="text-center text-xs font-bold tracking-wider text-green-400/90">
