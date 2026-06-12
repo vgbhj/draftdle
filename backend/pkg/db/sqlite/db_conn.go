@@ -6,5 +6,6 @@ import (
 )
 
 func NewSqliteDB(dbPath string) (*sqlx.DB, error) {
-	return sqlx.Connect("sqlite", dbPath)
+	// SQLite не применяет FOREIGN KEY (в т.ч. ON DELETE CASCADE) без этой прагмы.
+	return sqlx.Connect("sqlite", dbPath+"?_pragma=foreign_keys(1)")
 }

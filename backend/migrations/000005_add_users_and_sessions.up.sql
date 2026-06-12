@@ -8,6 +8,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE sessions (
+    -- hex(SHA256(токен)); сырой токен живёт только в cookie клиента.
     token TEXT PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at INTEGER NOT NULL,

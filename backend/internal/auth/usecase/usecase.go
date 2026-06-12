@@ -66,7 +66,7 @@ func (u *AuthUC) LoginTelegram(data auth.TelegramAuthData) (*models.User, *auth.
 	}
 	expiresAt := time.Now().Add(sessionTTL)
 
-	if err := u.authRepo.CreateSession(token, user.ID, expiresAt); err != nil {
+	if err := u.authRepo.CreateSession(hashToken(token), user.ID, expiresAt); err != nil {
 		return nil, nil, err
 	}
 
@@ -77,11 +77,11 @@ func (u *AuthUC) LoginTelegram(data auth.TelegramAuthData) (*models.User, *auth.
 }
 
 func (u *AuthUC) Logout(token string) error {
-	return u.authRepo.DeleteSession(token)
+	return u.authRepo.DeleteSession(hashToken(token))
 }
 
 func (u *AuthUC) Me(token string) (*models.User, error) {
-	user, err := u.authRepo.GetUserBySessionToken(token)
+	user, err := u.authRepo.GetUserBySessionToken(hashToken(token))
 	if err != nil {
 		return nil, ErrInvalidSession
 	}
@@ -124,4 +124,11 @@ func newSessionToken() (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(buf), nil
+}
+
+// hashToken возвращает hex(SHA256(token)): в БД хранится только хеш,
+// поэтому утечка dota.db не даёт действующих сессионных токенов.
+func hashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
 }
