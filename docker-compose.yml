@@ -7,6 +7,7 @@ services:
       args:
         - VITE_TG_BOT_NAME=${TG_BOT_NAME:-}
     container_name: draftdle
+    restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
