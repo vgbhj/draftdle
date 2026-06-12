@@ -1,9 +1,12 @@
 # Stage 1: Build frontend
 FROM node:22-alpine AS frontend-builder
+# Username бота без @ — нужен Telegram Login Widget, вшивается в бандл при сборке.
+ARG VITE_TG_BOT_NAME=""
+ENV VITE_TG_BOT_NAME=$VITE_TG_BOT_NAME
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
-COPY frontend . 
+COPY frontend .
 RUN npm run build
 
 # Stage 2: Build backend

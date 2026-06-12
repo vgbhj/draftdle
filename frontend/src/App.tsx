@@ -3,16 +3,19 @@ import type { GameDraft, Hero } from "./types/api";
 import { fetchDraft, fetchDailyDraft, getHeroes } from "./api/client";
 import { getHeroImageUrlFromHero } from "./utils/heroImages";
 import { Header } from "./components/Header";
+import { AuthBar } from "./components/AuthBar";
 import { DraftBoard } from "./screens/DraftBoard";
 import { HeroPicker } from "./screens/HeroPicker";
 import { MainMenu } from "./screens/MainMenu";
 import type { HintData } from "./components/HintBar";
+import { useAuth } from "./hooks/useAuth";
 
 type GameMode = "menu" | "daily" | "random";
 const MAX_GUESSES = 5;
 
 export default function App() {
   const heroes = getHeroes();
+  const auth = useAuth();
   const [mode, setMode] = useState<GameMode>("menu");
   const [game, setGame] = useState<GameDraft | null>(null);
   const [loading, setLoading] = useState(false);
@@ -153,6 +156,12 @@ export default function App() {
       <div className="h-screen h-[100svh] bg-gradient-to-br from-purple-950 via-slate-950 to-black flex flex-col items-center justify-start text-purple-100 overflow-hidden">
         <div className="w-full max-w-md flex flex-col h-full overflow-hidden">
           <Header />
+          <AuthBar
+            user={auth.user}
+            loading={auth.loading}
+            onAuth={auth.login}
+            onLogout={auth.logout}
+          />
           <MainMenu onSelectMode={handleSelectMode} />
         </div>
       </div>

@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/vgbhj/draftdle/internal/server"
 	"github.com/vgbhj/draftdle/pkg/db/sqlite"
 	"github.com/vgbhj/draftdle/pkg/parser"
@@ -11,6 +12,9 @@ import (
 )
 
 func main() {
+	// .env опционален: в Docker переменные приходят через environment.
+	_ = godotenv.Load()
+
 	parser.InitClient(false, rate.Every(2*time.Second), 1)
 
 	db, err := sqlite.NewSqliteDB("./data/dota.db")
