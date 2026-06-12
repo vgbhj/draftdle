@@ -15,7 +15,7 @@ Draftdle is a Dota 2 draft web app. A Go backend (Echo + SQLite) serves a JSON A
   - `internal/server/handlers.go` — Also mounts `frontend/dist` as static (HTML5 fallback) so the same Echo instance serves the SPA.
   - `pkg/parser/parser.go` — OpenDota client + rate limiter (`golang.org/x/time/rate`). `InitConfig(enableApi, rateEvery, burst)` toggles network calls.
   - `pkg/db/sqlite` — `NewSqliteDB` opener (`modernc.org/sqlite`, no CGO needed at runtime in API; parser uses same driver).
-  - `migrations/` — Plain `.up.sql` / `.down.sql` files (golang-migrate naming). Not auto-applied; apply manually against `backend/data/dota.db`.
+  - `migrations/` — Plain `.up.sql` / `.down.sql` files (golang-migrate naming). Embedded into the API binary (`migrations/embed.go`) and auto-applied on startup via `sqlite.RunMigrations`.
   - `data/dota.db` — SQLite file, mounted as a volume in Docker.
 - `frontend/` — Vite + React 19 + TS + Tailwind v4 SPA. Built output in `frontend/dist` is what the Go server serves.
 - `Dockerfile` (root) — Multi-stage: builds frontend (`npm run build`), then backend (`CGO_ENABLED=1`), then alpine runtime image that runs `./backend` and serves `frontend/dist`. Only the API is built into the image — the parser is not.
@@ -51,7 +51,7 @@ docker compose up --build     # Builds frontend+backend, serves both on :8080
 - **Single-binary deployment.** The Go server both exposes `/api/v1/...` and serves the React SPA from `frontend/dist` with HTML5 history fallback. When developing the frontend against a running backend, either run `npm run build` to refresh `dist`, or use Vite dev server and point API calls at `:8080`.
 - **Draft feature follows repo→usecase→delivery layering.** New endpoints should be wired in `internal/server/handlers.go` after adding repo/usecase/handler under `internal/<feature>/`.
 - **Parser is deliberately decoupled.** The API binary never calls OpenDota; it only reads the SQLite DB the parser writes. To populate data locally, run `cmd/parser` once (and note the rate limit defaults in `parser.InitConfig` — the commented-out lines show higher-throughput configs).
-- **Migrations are not run automatically.** Apply `backend/migrations/*.up.sql` manually (e.g. via `golang-migrate`) when schema changes.
+- **Migrations run automatically on API startup.** `cmd/api` calls `sqlite.RunMigrations` (golang-migrate over embedded `migrations/*.sql`). Pre-automation DBs (no `schema_migrations` table) are baselined via marker tables in `pkg/db/sqlite/migrate.go`. To change schema, just add a new numbered `.up.sql`/`.down.sql` pair — it ships with the next deploy.
 
 <!-- code-review-graph MCP tools -->
 ## MCP Tools: code-review-graph
