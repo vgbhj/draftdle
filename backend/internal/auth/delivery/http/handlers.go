@@ -69,6 +69,7 @@ func (h *AuthHandler) Logout() echo.HandlerFunc {
 			MaxAge:   -1,
 			HttpOnly: true,
 			SameSite: http.SameSiteLaxMode,
+			Secure:   c.Scheme() == "https",
 		})
 
 		return c.NoContent(http.StatusNoContent)
