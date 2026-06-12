@@ -10,13 +10,13 @@ interface AuthBarProps {
   onLogout: () => void;
 }
 
-/** Плашка под шапкой: виджет входа для гостя, имя + Logout для своих. */
+/** Блок в правой части шапки: виджет входа для гостя, имя + Logout для своих. */
 export function AuthBar({ user, loading, onAuth, onLogout }: AuthBarProps) {
   if (loading) return null;
 
   if (user) {
     return (
-      <div className="flex items-center justify-center gap-3 px-4 py-2 flex-shrink-0">
+      <div className="flex items-center gap-2">
         {user.photo_url && (
           <img
             src={user.photo_url}
@@ -24,12 +24,12 @@ export function AuthBar({ user, loading, onAuth, onLogout }: AuthBarProps) {
             className="w-7 h-7 rounded-full border border-purple-400/30"
           />
         )}
-        <span className="text-sm text-purple-100/90 font-semibold">
+        <span className="text-xs text-purple-100/90 font-semibold">
           {user.username || user.first_name}
         </span>
         <button
           type="button"
-          className="px-3 py-1 text-xs bg-white/5 hover:bg-white/15 border border-white/10 rounded font-bold text-white/70 transition-all cursor-pointer"
+          className="px-2 py-1 text-xs bg-white/5 hover:bg-white/15 border border-white/10 rounded font-bold text-white/70 transition-all cursor-pointer"
           onClick={onLogout}
         >
           LOGOUT
@@ -40,9 +40,5 @@ export function AuthBar({ user, loading, onAuth, onLogout }: AuthBarProps) {
 
   if (!BOT_NAME) return null;
 
-  return (
-    <div className="flex justify-center px-4 py-2 flex-shrink-0">
-      <TelegramLoginButton botName={BOT_NAME} onAuth={onAuth} />
-    </div>
-  );
+  return <TelegramLoginButton botName={BOT_NAME} onAuth={onAuth} />;
 }

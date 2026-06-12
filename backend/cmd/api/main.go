@@ -23,6 +23,10 @@ func main() {
 	}
 	defer db.Close()
 
+	if err := sqlite.RunMigrations(db); err != nil {
+		log.Fatalf("Migrations failed: %v", err)
+	}
+
 	s := server.NewServer(":8080", db)
 
 	if err := s.Run(); err != nil {
