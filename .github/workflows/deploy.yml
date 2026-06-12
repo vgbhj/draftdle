@@ -6,6 +6,8 @@ on:
 
 env:
   IMAGE_NAME: draftdle
+  TG_BOT_NAME: draftdle_bot
+  TG_BOT_ID: "8074483478"
 
 jobs:
   build-and-deploy:
@@ -14,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build Docker image
-        run: docker build -t $IMAGE_NAME .
+        run: docker build -t $IMAGE_NAME --build-arg VITE_TG_BOT_NAME=$TG_BOT_NAME --build-arg VITE_TG_BOT_ID=$TG_BOT_ID .
 
       - name: Save image as tarball
         run: docker save $IMAGE_NAME | gzip > image.tar.gz

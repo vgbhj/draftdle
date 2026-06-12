@@ -6,6 +6,7 @@ services:
       dockerfile: Dockerfile
       args:
         - VITE_TG_BOT_NAME=${TG_BOT_NAME:-}
+        - VITE_TG_BOT_ID=${TG_BOT_ID:-}
     container_name: draftdle
     restart: unless-stopped
     ports:

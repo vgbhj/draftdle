@@ -2,6 +2,7 @@ import type { AuthUser, TelegramAuthData } from "../types/api";
 import { TelegramLoginButton } from "./TelegramLoginButton";
 
 const BOT_NAME: string = import.meta.env.VITE_TG_BOT_NAME ?? "";
+const BOT_ID: string = import.meta.env.VITE_TG_BOT_ID ?? "";
 
 interface AuthBarProps {
   user: AuthUser | null;
@@ -38,7 +39,7 @@ export function AuthBar({ user, loading, onAuth, onLogout }: AuthBarProps) {
     );
   }
 
-  if (!BOT_NAME) return null;
+  if (!BOT_NAME && !BOT_ID) return null;
 
-  return <TelegramLoginButton botName={BOT_NAME} onAuth={onAuth} />;
+  return <TelegramLoginButton botName={BOT_NAME} botId={BOT_ID} onAuth={onAuth} />;
 }
