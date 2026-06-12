@@ -10,6 +10,8 @@ import type {
   BackendDraftResponse,
   TeamKind,
   PickBanSlot,
+  TelegramAuthData,
+  AuthUser,
 } from "../types/api";
 import { HEROES_LIST } from "../data/heroes";
 
@@ -125,4 +127,39 @@ export async function fetchDailyDraft(): Promise<GameDraft> {
 /** Список всех героев (статичный, с фронта). */
 export function getHeroes(): Hero[] {
   return HEROES_LIST;
+}
+
+/**
+ * Авторизация. Сессия живёт в httpOnly-cookie, которую ставит бэкенд —
+ * фронт токен не видит и не хранит, только шлёт запросы с credentials.
+ */
+
+export async function loginWithTelegram(
+  data: TelegramAuthData,
+): Promise<AuthUser> {
+  const res = await fetch(`${API_BASE}/api/v1/auth/telegram`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error(`Auth error: ${res.status}`);
+  return res.json() as Promise<AuthUser>;
+}
+
+/** null — пользователь не залогинен (401 здесь не ошибка). */
+export async function fetchMe(): Promise<AuthUser | null> {
+  const res = await fetch(`${API_BASE}/api/v1/auth/me`, {
+    credentials: "include",
+  });
+  if (res.status === 401) return null;
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  return res.json() as Promise<AuthUser>;
+}
+
+export async function logoutSession(): Promise<void> {
+  await fetch(`${API_BASE}/api/v1/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
 }

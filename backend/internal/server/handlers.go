@@ -9,6 +9,9 @@ import (
 	"github.com/vgbhj/draftdle/internal/draft/usecase"
 	"github.com/vgbhj/draftdle/pkg/parser"
 
+	authHttp "github.com/vgbhj/draftdle/internal/auth/delivery/http"
+	authRepository "github.com/vgbhj/draftdle/internal/auth/repository"
+	authUsecase "github.com/vgbhj/draftdle/internal/auth/usecase"
 	draftHttp "github.com/vgbhj/draftdle/internal/draft/delivery/http"
 )
 
@@ -23,6 +26,16 @@ func (s *Server) MapHandlers(e *echo.Echo) error {
 	draftHandler := draftHttp.NewDraftHandler(draftUC)
 
 	draftHttp.MapRoutes(draft, draftHandler)
+
+	auth := v1.Group("/auth")
+
+	authRepo := authRepository.NewAuthRepository(s.db)
+
+	authUC := authUsecase.NewAuthUseCase(authRepo, os.Getenv("TELEGRAM_BOT_TOKEN"))
+
+	authHandler := authHttp.NewAuthHandler(authUC)
+
+	authHttp.MapRoutes(auth, authHandler)
 
     e.Use(middleware.StaticWithConfig(middleware.StaticConfig{
         Root:   staticRoot(),

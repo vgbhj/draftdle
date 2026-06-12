@@ -102,3 +102,23 @@ export interface LeagueInfo {
   name: string;
   tier: string;
 }
+
+/** Payload, который Telegram Login Widget передаёт в onauth-колбэк. */
+export interface TelegramAuthData {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash: string;
+}
+
+/** Пользователь из GET /api/v1/auth/me и POST /api/v1/auth/telegram. */
+export interface AuthUser {
+  id: number;
+  tg_id: number;
+  username: string;
+  first_name: string;
+  photo_url: string;
+}
