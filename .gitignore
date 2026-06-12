@@ -1,2 +1,5 @@
 # Added by code-review-graph
 .code-review-graph/
+
+# Локальное окружение для docker compose (TG_BOT_*, TELEGRAM_BOT_TOKEN)
+.env

@@ -3,6 +3,9 @@ FROM node:22-alpine AS frontend-builder
 # Username бота без @ — нужен Telegram Login Widget, вшивается в бандл при сборке.
 ARG VITE_TG_BOT_NAME=""
 ENV VITE_TG_BOT_NAME=$VITE_TG_BOT_NAME
+# Числовой ID бота (цифры до «:» в токене) — включает свою кнопку входа вместо iframe-виджета.
+ARG VITE_TG_BOT_ID=""
+ENV VITE_TG_BOT_ID=$VITE_TG_BOT_ID
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
